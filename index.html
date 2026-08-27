@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a84ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jim Gym">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<title>Fitness Progress Tracker</title>
+<link rel="stylesheet" href="./styles.css">
+<link rel="stylesheet" href="./auth.css">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+
+</head>
+<body>
+
+<section id="authGate" class="auth-gate" aria-label="Account access">
+  <div class="auth-shell">
+    <div class="auth-brand">
+      <span class="auth-mark" aria-hidden="true">J</span>
+      <span class="eyebrow">JIM GYM</span>
+      <h1>Fitness Progress</h1>
+      <p>Your training history, separated by account.</p>
+    </div>
+
+    <div id="authLoading" class="auth-loading">
+      <span class="auth-spinner" aria-hidden="true"></span>
+      <span>Checking your account…</span>
+    </div>
+
+    <section id="authCard" class="auth-card" hidden>
+      <div class="auth-segments" role="tablist" aria-label="Account action">
+        <button id="signInModeButton" type="button" role="tab" aria-selected="true">Sign In</button>
+        <button id="registerModeButton" type="button" role="tab" aria-selected="false">Register</button>
+      </div>
+
+      <form id="signInForm" class="auth-form">
+        <label>
+          <span>Email</span>
+          <input id="signInEmail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="signInPassword" type="password" autocomplete="current-password" required placeholder="Password">
+        </label>
+        <button id="signInButton" class="auth-primary" type="submit">Sign In</button>
+        <button id="forgotPasswordButton" class="auth-link" type="button">Forgot password?</button>
+      </form>
+
+      <form id="registerForm" class="auth-form" hidden>
+        <label>
+          <span>Display name</span>
+          <input id="registerName" type="text" autocomplete="name" required maxlength="40" placeholder="James">
+        </label>
+        <label>
+          <span>Email</span>
+          <input id="registerEmail" type="email" autocomplete="email" inputmode="email" required placeholder="you@example.com">
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="registerPassword" type="password" autocomplete="new-password" minlength="6" required placeholder="At least 6 characters">
+        </label>
+        <label>
+          <span>Confirm password</span>
+          <input id="registerPasswordConfirm" type="password" autocomplete="new-password" minlength="6" required placeholder="Repeat password">
+        </label>
+        <button id="registerButton" class="auth-primary" type="submit">Create Account</button>
+      </form>
+
+      <p id="authMessage" class="auth-message" aria-live="polite"></p>
+    </section>
+  </div>
+</section>
+
+<main id="appShell" class="app" hidden>
+<section class="hero">
+  <div>
+    <span class="eyebrow">TRAINING</span>
+    <h1>Fitness Progress</h1>
+    <p>Log today. See what is improving.</p>
+  </div>
+</section>
+
+<nav class="tabs ios-tabbar" role="tablist" aria-label="Fitness app sections">
+  <button class="tab-button" id="splitManagerTab" role="tab" aria-selected="false" aria-controls="splitManagerPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16M7 4v5M12 9.5v5M17 15v5"/></svg>
+    <span>Splits</span>
+  </button>
+  <button class="tab-button" id="workoutLoggingTab" role="tab" aria-selected="true" aria-controls="workoutLoggingPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9v6M9 7v10M15 7v10M18 9v6M9 12h6M3.5 10v4M20.5 10v4"/></svg>
+    <span>Log</span>
+  </button>
+  <button class="tab-button" id="workoutTrackingTab" role="tab" aria-selected="false" aria-controls="workoutTrackingPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18V9M10 18V5M16 18v-7M22 18V3M2 18h20"/></svg>
+    <span>Progress</span>
+  </button>
+  <button class="tab-button" id="adminTab" role="tab" aria-selected="false" aria-controls="adminPanel" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 4.5 6v5.2c0 4.5 3.1 8.7 7.5 9.8 4.4-1.1 7.5-5.3 7.5-9.8V6L12 3Zm0 5v4m0 4h.01"/></svg>
+    <span>Admin</span>
+  </button>
+  <button class="tab-button" id="settingsTab" role="tab" aria-selected="false" aria-controls="settingsPanel">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.25A3.25 3.25 0 1 0 12 8.75a3.25 3.25 0 0 0 0 6.5ZM19 12a7.4 7.4 0 0 0-.08-1l2-1.55-2-3.46-2.48 1a7.8 7.8 0 0 0-1.74-1L14.32 3h-4.64L9.3 6a7.8 7.8 0 0 0-1.74 1l-2.48-1-2 3.46 2 1.55A7.4 7.4 0 0 0 5 12c0 .34.03.67.08 1l-2 1.55 2 3.46 2.48-1a7.8 7.8 0 0 0 1.74 1l.38 3h4.64l.38-3a7.8 7.8 0 0 0 1.74-1l2.48 1 2-3.46-2-1.55c.05-.33.08-.66.08-1Z"/></svg>
+    <span>Settings</span>
+  </button>
+</nav>
+
+<section id="splitManagerPanel" class="tab-panel" role="tabpanel" aria-labelledby="splitManagerTab" hidden>
+  <section class="panel split-manager-panel">
+    <div class="panel-header">
+      <div class="row"><h2>Splits</h2><span class="badge">Programs</span></div>
+      <p class="sub">Create and manage reusable workout splits without editing the app source code.</p>
+    </div>
+
+    <div class="split-manager-toolbar">
+      <button id="newSplitButton" class="primary-button" type="button">+ New Split</button>
+      <button id="manageSplitsButton" class="secondary-button" type="button">Manage Splits</button>
+      <button id="exportAllSplitsButton" class="secondary-button" type="button">Export Splits</button>
+      <button id="importSplitsButton" class="secondary-button" type="button">Import JSON</button>
+      <input id="importSplitsFile" type="file" accept="application/json,.json" hidden>
+    </div>
+    <div id="splitManagerStatus" class="split-manager-status" aria-live="polite"></div>
+
+    <section id="splitListView" class="split-manager-view" hidden>
+      <div class="split-manager-section-heading">
+        <div><h3>Saved Splits</h3><p class="sub">Select a custom split to edit it, or permanently delete it.</p></div>
+      </div>
+      <div id="managedSplitList" class="managed-split-list"></div>
+    </section>
+
+    <section id="splitEditorView" class="split-manager-view" hidden>
+      <div class="split-meta-grid">
+        <label class="field">
+          <span class="label-row"><span class="label">Split name</span><span class="unit">required</span></span>
+          <input id="splitEditorName" type="text" placeholder="My workout split" autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="label-row"><span class="label">Workout days</span><span class="unit">1–7</span></span>
+          <select id="splitEditorDayCount">
+            <option value="">Select number of days…</option>
+            <option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option>
+            <option value="4">4 days</option><option value="5">5 days</option><option value="6">6 days</option><option value="7">7 days</option>
+          </select>
+        </label>
+      </div>
+
+      <section id="splitDayEditor" hidden>
+        <div class="split-order-section">
+          <div class="split-order-heading">
+            <strong>Day order</strong>
+            <span class="sub">Drag days to reorder, or use the arrow buttons.</span>
+          </div>
+          <div id="splitDayOrderList" class="split-day-order-list"></div>
+        </div>
+
+        <div class="split-day-navigation">
+          <button id="previousSplitDayButton" class="secondary-button" type="button">← Previous Day</button>
+          <label class="select-field split-day-jump"><span class="label">Editing day</span><select id="splitDaySelector"></select></label>
+          <button id="nextSplitDayButton" class="secondary-button" type="button">Next Day →</button>
+        </div>
+
+        <label class="field split-day-name">
+          <span class="label-row"><span class="label">Day name</span><span class="unit">e.g. Pull / Back</span></span>
+          <input id="splitDayName" type="text" placeholder="Name this workout day">
+        </label>
+
+        <div class="split-builder-columns">
+          <section class="split-builder-card">
+            <div class="split-builder-card-header"><h3>Warm-Ups</h3><p class="sub">Choose from the app's warm-up library and define the volume.</p></div>
+            <div class="builder-form-grid">
+              <label class="select-field builder-span-2"><span class="label">Warm-up</span><select id="warmupLibrarySelector"><option value="">Select a warm-up…</option></select></label>
+              <label class="select-field"><span class="label">Volume format</span>
+                <select id="warmupVolumeType">
+                  <option value="setsReps">Sets × reps</option><option value="reps">Reps</option>
+                  <option value="repsSide">Reps / side</option><option value="seconds">Time (seconds)</option>
+                  <option value="secondsSide">Time / side (seconds)</option><option value="stepsDirection">Steps each direction</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <label id="warmupSetsWrap" class="field compact-field"><span class="label-row"><span class="label">Sets</span></span><input id="warmupSets" type="number" min="1" step="1" placeholder="1"></label>
+              <label id="warmupRepsWrap" class="field compact-field"><span class="label-row"><span id="warmupRepsLabel" class="label">Reps</span></span><input id="warmupReps" type="number" min="1" step="1" placeholder="15"></label>
+              <label id="warmupCustomWrap" class="field compact-field builder-span-2" hidden><span class="label-row"><span class="label">Custom volume</span></span><input id="warmupCustomVolume" type="text" placeholder="e.g. 10 forward + 10 backward"></label>
+            </div>
+            <button id="saveWarmupButton" class="primary-button builder-save-button" type="button">Save Warm-Up</button>
+            <p id="warmupBuilderMessage" class="builder-message" aria-live="polite"></p>
+            <div id="savedWarmupList" class="builder-saved-list"></div>
+          </section>
+
+          <section class="split-builder-card">
+            <div class="split-builder-card-header"><h3>Workouts</h3><p class="sub">Choose a category, exercise, and prescribed working volume.</p></div>
+            <div class="builder-form-grid">
+              <label class="select-field"><span class="label">Workout type</span>
+                <select id="splitWorkoutType">
+                  <option value="">Select type…</option><option value="Cardio">Cardio</option><option value="Compound">Compound</option>
+                  <option value="Core">Core</option><option value="Back">Back</option><option value="Biceps">Biceps</option>
+                  <option value="Chest">Chest</option><option value="Shoulders">Shoulders</option><option value="Triceps">Triceps</option>
+                  <option value="Forearms">Forearms</option><option value="Quadriceps">Quads</option><option value="Hamstrings">Hamstrings</option>
+                  <option value="Glutes">Glutes</option><option value="Adductors">Adductors</option><option value="Calves">Calves</option>
+                </select>
+              </label>
+              <label class="select-field"><span class="label">Workout</span><select id="splitWorkoutExercise" disabled><option value="">Select workout type first…</option></select></label>
+              <label class="field compact-field"><span class="label-row"><span class="label">Sets</span></span><input id="splitWorkoutSets" type="number" min="1" step="1" placeholder="3"></label>
+              <label class="field compact-field"><span class="label-row"><span id="splitWorkoutMinLabel" class="label">Lower rep bound</span></span><input id="splitWorkoutMin" type="number" min="1" step="1" placeholder="8"></label>
+              <label class="field compact-field"><span class="label-row"><span id="splitWorkoutMaxLabel" class="label">Upper rep bound</span></span><input id="splitWorkoutMax" type="number" min="1" step="1" placeholder="12"></label>
+            </div>
+            <div id="splitWorkoutUnitHint" class="builder-unit-hint">Volume will be displayed as sets × rep range.</div>
+            <button id="saveWorkoutButton" class="primary-button builder-save-button" type="button">Save Workout</button>
+            <p id="workoutBuilderMessage" class="builder-message" aria-live="polite"></p>
+            <div id="savedWorkoutList" class="builder-saved-list"></div>
+
+            <div class="custom-workout-divider"></div>
+            <button id="toggleCustomWorkoutButton" class="secondary-button builder-save-button" type="button">+ Create Custom Workout</button>
+
+            <section id="customWorkoutCreator" class="custom-workout-creator" hidden>
+              <h4>Create Custom Workout</h4>
+              <p class="sub">Save a new exercise to this device's exercise library.</p>
+
+              <div class="builder-form-grid">
+                <label class="field compact-field builder-span-2">
+                  <span class="label-row"><span class="label">Workout name</span></span>
+                  <input id="customWorkoutName" type="text" placeholder="e.g. Landmine Press">
+                </label>
+
+                <label class="select-field">
+                  <span class="label">Workout group</span>
+                  <select id="customWorkoutGroup">
+                    <option value="">Select group…</option>
+                    <option value="Compound">Compound</option>
+                    <option value="Back">Back</option>
+                    <option value="Biceps">Biceps</option>
+                    <option value="Chest">Chest</option>
+                    <option value="Shoulders">Shoulders</option>
+                    <option value="Triceps">Triceps</option>
+                    <option value="Forearms">Forearms</option>
+                    <option value="Quadriceps">Quads</option>
+                    <option value="Hamstrings">Hamstrings</option>
+                    <option value="Glutes">Glutes</option>
+                    <option value="Calves">Calves</option>
+                    <option value="Core">Core</option>
+                    <option value="Cardio">Cardio</option>
+                  </select>
+                </label>
+
+                <div class="custom-capability-box">
+                  <label class="custom-check"><input id="customWorkoutTracksWeight" type="checkbox" checked> <span>Track loading / weight</span></label>
+                  <label class="custom-check"><input id="customWorkoutTimed" type="checkbox"> <span>Use seconds instead of reps</span></label>
+                  <label class="custom-check"><input id="customWorkoutNoVolume" type="checkbox"> <span>No sets or range (cardio-style)</span></label>
+                </div>
+
+                <label class="custom-check builder-span-2">
+                  <input id="customWorkoutHasAlternatives" type="checkbox">
+                  <span>Include alternate forms / variations</span>
+                </label>
+
+                <div id="customAlternativesArea" class="builder-span-2 custom-alternatives-area" hidden>
+                  <div class="custom-alt-entry">
+                    <input id="customAlternativeName" type="text" placeholder="Alternative / variation name">
+                    <button id="addCustomAlternativeButton" class="secondary-button" type="button">Add Alternative</button>
+                  </div>
+                  <div id="customAlternativeList" class="builder-saved-list"></div>
+                </div>
+              </div>
+
+              <button id="saveCustomWorkoutButton" class="primary-button builder-save-button" type="button">Save to Exercise Library</button>
+              <p id="customWorkoutMessage" class="builder-message" aria-live="polite"></p>
+            </section>
+          </section>
+        </div>
+
+        <div class="split-editor-footer"><button id="saveSplitButton" class="primary-button" type="button">Save Split</button></div>
+      </section>
+    </section>
+  </section>
+</section>
+
+<section id="workoutLoggingPanel" class="tab-panel" role="tabpanel" aria-labelledby="workoutLoggingTab">
+  <section class="panel">
+    <div class="panel-header">
+      <div class="row"><h2>Log Workout</h2><span class="badge">Today</span></div>
+      <p class="sub">Choose a workout split, date, and workout day. If the day includes Cycling, the live commute calculator appears first, followed by warm-ups and working sets.</p>
+    </div>
+    <div class="workout-control-grid">
+      <label class="field">
+        <span class="label-row"><span class="label">Workout split <span class="req">*</span></span><span class="unit">program</span></span>
+        <select id="workoutSplitSelector">
+          <option value="">Select a workout split…</option>
+        </select>
+      </label>
+
+      <label class="field">
+        <span class="label-row"><span class="label">Workout date <span class="req">*</span></span><span class="unit">MM/DD/YYYY</span></span>
+        <input id="strengthWorkoutDate" type="text" inputmode="numeric" placeholder="08/24/2026" maxlength="10" autocomplete="off" disabled>
+      </label>
+
+      <label class="field">
+        <span class="label-row"><span class="label">Workout day <span class="req">*</span></span><span class="unit">selected split</span></span>
+        <select id="workoutDaySelector" disabled>
+          <option value="">Select a workout split first…</option>
+        </select>
+      </label>
+    </div>
+    <div id="workoutLoggingMessage" class="validation" hidden></div>
+    <div id="selectedDayDescription" class="day-description" hidden></div>
+
+    <section id="inlineCyclingContainer" class="workout-section cycling-inline" hidden>
+      <div class="workout-section-title">
+        <h2>Cycling</h2>
+        <span class="badge live">Live commute calculator</span>
+      </div>
+      <p class="sub cycling-inline-note">This split includes Cycling, so the commute calculator appears before the warm-up.</p>
+      <div class="layout">
+    <section class="panel">
+      <div class="panel-header">
+        <div class="row">
+          <h2>Required Inputs</h2>
+          <span class="badge live">Updates live</span>
+        </div>
+        <p class="sub">Enter the ride time, date, and total rider-plus-bike weight.</p>
+      </div>
+
+      <div class="form-grid">
+        <label class="field">
+          <span class="label-row"><span class="label">Commute time <span class="req">*</span></span><span class="unit">mm:ss</span></span>
+          <input id="commuteTime" type="text" inputmode="numeric" value="" placeholder="29:00">
+          <span class="hint">Example: 29:00</span>
+        </label>
+
+        <label class="field">
+          <span class="label-row"><span class="label">Commute date <span class="req">*</span></span><span class="unit">date</span></span>
+          <input id="commuteDate" type="date">
+          <span class="hint">Stored with the workout</span>
+        </label>
+
+        <label class="field">
+          <span class="label-row"><span class="label">Total weight <span class="req">*</span></span><span class="unit">pounds</span></span>
+          <input id="weightPounds" type="number" value="" min="1" step="1" placeholder="Enter today&#39;s total weight">
+          <span class="hint">Rider, bicycle, clothing, and cargo</span>
+        </label>
+      </div>
+    </section>
+
+    <aside class="panel results" aria-live="polite">
+      <div class="panel-header">
+        <div class="row"><h2>Live Results</h2><span class="badge live">Live</span></div>
+        <p class="sub">Primary results update as soon as an input changes.</p>
+      </div>
+
+      <div id="validationMessage" class="validation" hidden></div>
+
+      <div class="result-grid">
+        <div class="result">
+          <span class="label">Average moving velocity</span>
+          <span id="movingVelocity" class="value">—</span>
+          <span class="unit">mph</span>
+        </div>
+        <div class="result">
+          <span class="label">Calories burned</span>
+          <span id="caloriesBurned" class="value">—</span>
+          <span class="unit">kilocalories</span>
+        </div>
+        <div class="result">
+          <span class="label">Mechanical power</span>
+          <span id="mechanicalPower" class="value">—</span>
+          <span class="unit">watts at the crank</span>
+        </div>
+        <div class="result">
+          <span class="label">Average force per leg</span>
+          <span id="pedalForce" class="value">—</span>
+          <span class="unit">lbf per power-stroke leg</span>
+        </div>
+      </div>
+
+      <div class="cycling-log-actions">
+        <button id="logCommuteButton" class="primary-button" type="button">Log Commute</button>
+      </div>
+      <p id="cyclingLogMessage" class="cycling-log-message" aria-live="polite"></p>
+
+      <section id="advancedResults" class="advanced-results" hidden>
+        <div class="panel-header">
+          <h3>Advanced Results</h3>
+          <p class="sub">Enabled in Settings.</p>
+        </div>
+        <div class="result-grid">
+          <div class="result">
+            <span class="label">Overall velocity</span>
+            <span id="overallVelocity" class="value">—</span>
+            <span class="unit">mph including traffic</span>
+          </div>
+          <div class="result">
+            <span class="label">Estimated cadence</span>
+            <span id="cadence" class="value">—</span>
+            <span class="unit">rpm in 3.43:1 gear</span>
+          </div>
+        </div>
+        <div class="details">
+          <div class="detail"><span>Moving time</span><strong id="movingTime">—</strong></div>
+          <div class="detail"><span>Equivalent climbing grade</span><strong id="gradePercent">—</strong></div>
+          <div class="detail"><span>Rolling resistance coefficient</span><strong id="rollingCoefficient">—</strong></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+    </section>
+    <div id="warmupContainer" class="workout-section" hidden>
+      <div class="workout-section-title"><h2>Warm-Up</h2><span class="badge">Check off as you go</span></div>
+      <div id="warmupList" class="warmup-list"></div>
+    </div>
+    <div id="workingSetsContainer" class="workout-section" hidden>
+      <div class="workout-section-title"><h2>Workout</h2><span class="badge live">Working sets</span></div>
+      <div id="workingExerciseList" class="exercise-stack"></div>
+    </div>
+  </section>
+</section>
+
+<section id="workoutTrackingPanel" class="tab-panel" role="tabpanel" aria-labelledby="workoutTrackingTab" hidden>
+  <section class="panel">
+    <div class="panel-header">
+      <div class="row"><h2>Workout Tracking</h2><span class="badge">Progress history</span></div>
+      <p class="sub">Select any exercise in the 5-day split to review every logged set in chronological order.</p>
+    </div>
+    <section class="tracking-dashboard" aria-label="Current month summary">
+      <div class="tracking-dashboard-heading">
+        <div>
+          <span class="eyebrow">OVERVIEW</span>
+          <h3>This Month</h3>
+        </div>
+        <span id="trackingDashboardMonth" class="dashboard-month"></span>
+      </div>
+      <div class="dashboard-metrics">
+        <div class="dashboard-metric"><strong id="dashboardWorkoutDays">0</strong><span>Workout days</span></div>
+        <div class="dashboard-metric"><strong id="dashboardSetCount">0</strong><span>Logged sets</span></div>
+        <div class="dashboard-metric"><strong id="dashboardRideCount">0</strong><span>Rides</span></div>
+        <div class="dashboard-metric"><strong id="dashboardExerciseCount">0</strong><span>Exercises</span></div>
+      </div>
+    </section>
+
+    <div class="tracking-controls">
+      <label class="select-field">
+        <span class="label">Muscle group</span>
+        <select id="trackingMuscleGroup">
+          <option value="">Select a muscle group…</option>
+        </select>
+      </label>
+      <label class="select-field">
+        <span class="label">Exercise</span>
+        <select id="trackingExerciseSelector" disabled>
+          <option value="">Select a muscle group first…</option>
+        </select>
+      </label>
+      <label class="select-field">
+        <span class="label">Time range</span>
+        <select id="trackingRange">
+          <option value="auto">Auto · full history</option>
+          <option value="month">Specific month</option>
+          <option value="3m">Last 3 months</option>
+          <option value="6m">Last 6 months</option>
+          <option value="1y">Last 1 year</option>
+          <option value="2y">Last 2 years</option>
+          <option value="all">All time</option>
+        </select>
+      </label>
+      <label id="trackingMonthWrap" class="select-field" hidden>
+        <span class="label">Month</span>
+        <input id="trackingMonth" type="month">
+      </label>
+      <button id="showProgressButton" class="primary-button" type="button">Show progress</button>
+    </div>
+    <div id="trackingResults" class="tracking-results">
+      <div class="empty-state">Choose an exercise and time range to review its history.</div>
+    </div>
+  </section>
+</section>
+
+
+<section id="adminPanel" class="tab-panel" role="tabpanel" aria-labelledby="adminTab" hidden>
+  <section class="panel admin-panel">
+    <div class="panel-header">
+      <div class="row"><h2>Admin</h2><span class="badge">Read only</span></div>
+      <p class="sub">Review registered users and their cloud-synced fitness data. This dashboard does not modify another user's records.</p>
+    </div>
+
+    <section class="admin-summary-strip">
+      <div class="admin-summary-metric"><strong id="adminUserCount">—</strong><span>Users</span></div>
+      <div class="admin-summary-metric"><strong id="adminDataKeyCount">—</strong><span>Cloud records</span></div>
+      <button id="adminRefreshButton" class="secondary-button" type="button">Refresh</button>
+    </section>
+
+    <div class="admin-layout">
+      <aside class="admin-user-browser">
+        <div class="admin-section-heading">
+          <div>
+            <span class="eyebrow">USERS</span>
+            <h3>Accounts</h3>
+          </div>
+        </div>
+        <label class="admin-search">
+          <span class="visually-hidden">Search users</span>
+          <input id="adminUserSearch" type="search" placeholder="Search name or email">
+        </label>
+        <div id="adminUserList" class="admin-user-list">
+          <div class="admin-empty">Loading users…</div>
+        </div>
+      </aside>
+
+      <section class="admin-user-detail">
+        <div id="adminNoUserSelected" class="admin-empty">
+          Select a user to review their profile and fitness data.
+        </div>
+
+        <div id="adminUserInspector" hidden>
+          <header class="admin-profile-header">
+            <div>
+              <span class="eyebrow">SELECTED USER</span>
+              <h3 id="adminSelectedName">User</h3>
+              <p id="adminSelectedEmail" class="sub"></p>
+            </div>
+            <span id="adminSelectedRole" class="admin-role-pill">User</span>
+          </header>
+
+          <div class="admin-inspector-tabs" role="tablist" aria-label="Admin data categories">
+            <button type="button" data-admin-view="overview" aria-selected="true">Overview</button>
+            <button type="button" data-admin-view="splits" aria-selected="false">Splits</button>
+            <button type="button" data-admin-view="workouts" aria-selected="false">Workouts</button>
+            <button type="button" data-admin-view="cycling" aria-selected="false">Cycling</button>
+            <button type="button" data-admin-view="library" aria-selected="false">Library</button>
+          </div>
+
+          <div id="adminInspectorContent" class="admin-inspector-content"></div>
+        </div>
+      </section>
+    </div>
+    <p id="adminStatus" class="admin-status" aria-live="polite"></p>
+  </section>
+</section>
+
+<section id="settingsPanel" class="tab-panel" role="tabpanel" aria-labelledby="settingsTab" hidden>
+  <section class="panel">
+    <div class="panel-header">
+      <div class="row"><h2>Settings</h2><span class="badge">Optional inputs</span></div>
+      <p class="sub">These values use Palms-to-UCLA defaults and update the calculator immediately.</p>
+    </div>
+
+    <div class="settings-wrap">
+
+      <section class="account-settings-card">
+        <div class="account-settings-copy">
+          <span class="eyebrow">ACCOUNT</span>
+          <strong id="currentUserDisplayName">Signed in</strong>
+          <span id="currentUserEmail" class="sub"></span>
+          <span id="currentUserRole" class="account-role">Private account</span>
+          <span id="cloudSyncStatus" class="cloud-sync-status">Connecting to cloud…</span>
+        </div>
+        <div class="account-actions">
+          <button id="logoutButton" class="secondary-button" type="button">Sign Out</button>
+          <button id="deleteAccountButton" class="danger-button" type="button">Delete Account</button>
+        </div>
+      </section>
+
+      <div class="settings-grid">
+        <label class="setting-card">
+          <span class="label-row"><span class="label">Commute distance</span><span class="unit">miles</span></span>
+          <input id="distanceMiles" type="number" value="4.4" min="0.01" step="0.1">
+        </label>
+
+        <label class="setting-card">
+          <span class="label-row"><span class="label">Total elevation gain</span><span class="unit">feet</span></span>
+          <input id="elevationFeet" type="number" value="299" min="0" step="1">
+        </label>
+
+        <label class="setting-card">
+          <span class="label-row"><span class="label">Wheel diameter</span><span class="unit">inches</span></span>
+          <input id="wheelDiameterInches" type="number" value="26" min="1" step="0.1">
+        </label>
+
+        <label class="setting-card">
+          <span class="label-row"><span class="label">Tire pressure</span><span class="unit">psig</span></span>
+          <input id="tirePressurePsig" type="number" value="40" min="1" step="1">
+        </label>
+
+        <label class="setting-card">
+          <span class="label-row"><span class="label">Dead traffic time</span><span class="unit">seconds</span></span>
+          <input id="deadTrafficSeconds" type="number" value="90" min="0" step="1">
+        </label>
+      </div>
+
+      <section class="install-settings-card">
+        <div class="install-settings-copy">
+          <span class="eyebrow">IPHONE APP</span>
+          <strong id="installAppTitle">Install Jim Gym</strong>
+          <span id="installAppStatus" class="sub">Add this website to your Home Screen for a full-screen app experience.</span>
+        </div>
+        <button id="installInstructionsButton" class="secondary-button" type="button">How to Install</button>
+      </section>
+
+      <section id="installInstructionsSheet" class="install-instructions-sheet" hidden>
+        <div class="install-instructions-header">
+          <div>
+            <span class="eyebrow">SAFARI</span>
+            <h3>Install on iPhone</h3>
+          </div>
+          <button id="closeInstallInstructionsButton" type="button" class="sheet-close" aria-label="Close installation instructions">×</button>
+        </div>
+        <ol>
+          <li>Open the Jim Gym website in <strong>Safari</strong>.</li>
+          <li>Tap the <strong>Share</strong> button in Safari.</li>
+          <li>Scroll down and tap <strong>Add to Home Screen</strong>.</li>
+          <li>Keep the name <strong>Jim Gym</strong> and tap <strong>Add</strong>.</li>
+          <li>Open the new Jim Gym icon from the Home Screen and sign in.</li>
+        </ol>
+        <p class="sub">Your account determines which workout data appears, so two people can install the same app without sharing progress.</p>
+      </section>
+
+      <section class="appearance-card">
+        <div>
+          <strong>Appearance</strong>
+          <span class="sub">Use your iPhone setting automatically or choose a fixed theme.</span>
+        </div>
+        <div class="segmented-control" id="appearanceControl" role="group" aria-label="Appearance">
+          <button type="button" data-theme-choice="system">System</button>
+          <button type="button" data-theme-choice="light">Light</button>
+          <button type="button" data-theme-choice="dark">Dark</button>
+        </div>
+      </section>
+
+      <div class="toggle-card">
+        <div class="toggle-copy">
+          <strong>Show advanced results</strong>
+          <span class="sub">Reveal overall speed, cadence, moving time, grade, and rolling resistance details.</span>
+        </div>
+        <label class="switch" aria-label="Show advanced results">
+          <input id="showAdvancedResults" type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="settings-actions">
+        <button id="saveSettingsButton" class="primary-button" type="button">Save Settings</button>
+        <button id="clearAllDataButton" class="secondary-button" type="button">Clear All Workout Data</button>
+        <span id="settingsSaveStatus" class="settings-save-status" aria-live="polite"></span>
+      </div>
+    </div>
+
+    <section class="note">
+  <strong>Model note:</strong> Power, force, cadence, and calorie values are estimates. Wind, braking, acceleration, tire construction, road roughness, and changing local grade are not directly measured. Elevation means cumulative ascent, not net change.
+</section>
+  </section>
+</section>
+
+<div id="logDetailBackdrop" class="log-detail-backdrop" hidden></div>
+<section id="logDetailSheet" class="log-detail-sheet" role="dialog" aria-modal="true" aria-labelledby="logDetailTitle" hidden>
+  <div class="sheet-grabber" aria-hidden="true"></div>
+  <div class="sheet-header">
+    <div>
+      <span class="eyebrow">LOG DETAILS</span>
+      <h2 id="logDetailTitle">Workout Log</h2>
+    </div>
+    <button id="closeLogDetailButton" class="sheet-close" type="button" aria-label="Close log details">×</button>
+  </div>
+  <div id="logDetailContent" class="log-detail-content"></div>
+  <div class="sheet-actions">
+    <button id="deleteLogDetailButton" class="danger-button" type="button">Delete Log</button>
+    <button id="doneLogDetailButton" class="primary-button" type="button">Done</button>
+  </div>
+</section>
+
+</main>
+
+<script src="./storage.js" defer></script>
+<script src="./app-core.js" defer></script>
+<script type="module" src="./bootstrap.js"></script>
+</body>
+</html>
