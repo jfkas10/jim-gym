@@ -18,6 +18,7 @@ const $=id=>document.getElementById(id);
 
 export function configureAdminAccess(user,profile){
   const isAdmin=profile?.role==="admin";
+  window.currentUserIsAdmin=isAdmin;
   const tab=$("adminTab");
 
   if(tab) tab.hidden=!isAdmin;

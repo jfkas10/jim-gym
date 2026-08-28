@@ -135,3 +135,25 @@ export async function deleteUserCloudData(uid){
   await deleteAllDocuments(appDataCollection(uid));
   await deleteDoc(userRef(uid));
 }
+
+
+export async function loadSharedExerciseOverrides(){
+  const snapshot=await getDocs(collection(db,"sharedExerciseOverrides"));
+  const result={};
+  snapshot.forEach(document=>{
+    result[document.id]={id:document.id,...document.data()};
+  });
+  return result;
+}
+
+export async function saveSharedExerciseOverride(exerciseId,definition){
+  await setDoc(doc(db,"sharedExerciseOverrides",exerciseId),{
+    ...definition,
+    id:exerciseId,
+    updatedAt:serverTimestamp()
+  });
+}
+
+export async function deleteSharedExerciseOverride(exerciseId){
+  await deleteDoc(doc(db,"sharedExerciseOverrides",exerciseId));
+}

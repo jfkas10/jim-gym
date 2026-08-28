@@ -10,7 +10,7 @@ const C={
 };
 
 const inputIds=[
-  "commuteTime","commuteDate","weightPounds","distanceMiles","elevationFeet",
+  "commuteTime","commuteMinutes","commuteSeconds","commuteDate","weightPounds","distanceMiles","elevationFeet",
   "wheelDiameterInches","tirePressurePsig","deadTrafficSeconds"
 ];
 const outputIds=[
@@ -19,7 +19,7 @@ const outputIds=[
 ];
 
 const tabIds=["splitManager","workoutLogging","workoutTracking","admin","settings"];
-const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap"];
+const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage"];
 const el=Object.fromEntries(
   [...inputIds,...outputIds,"validationMessage","advancedResults","showAdvancedResults",
    ...workoutElementIds,...tabIds.flatMap(name=>[name+"Tab",name+"Panel"])]
@@ -757,11 +757,45 @@ function getWorkoutSplit(splitId){
   if(builtIn){
     const override=getCustomSplits().find(split=>split.id===splitId);
     const resolved=override ? convertManagerSplitToWorkoutLoggingSplit(override) : deepClone(builtIn);
-    return ensureBuiltInLoggingActivities(resolved);
+    return applyLibraryDefinitionsToLoggingSplit(ensureBuiltInLoggingActivities(resolved));
   }
 
   const custom=getCustomSplits().find(split=>split.id===splitId);
   return custom ? convertManagerSplitToWorkoutLoggingSplit(custom) : null;
+}
+
+function applyLibraryDefinitionsToLoggingSplit(split){
+  if(!split) return split;
+  const library=getManagerExerciseLibrary();
+
+  (split.days||[]).forEach(day=>{
+    (day.exercises||[]).forEach(exercise=>{
+      const id=exercise.trackingId||exercise.id;
+      const definition=library.find(item=>item.id===id);
+      if(!definition) return;
+
+      exercise.name=definition.name||exercise.name;
+      exercise.noLoad=definition.tracksWeight===false;
+      exercise.assistanceToggle=Boolean(definition.assistanceToggle);
+      exercise.side=Boolean(definition.side);
+      exercise.choiceLabel=definition.choiceLabel||exercise.choiceLabel||"Variation";
+
+      if(definition.unit==="seconds") exercise.repsLabel="Seconds";
+
+      if(Array.isArray(definition.variants)&&definition.variants.length){
+        exercise.options=definition.variants.map(variant=>({
+          id:definition.id,
+          trackingId:definition.id,
+          name:variant,
+          variant,
+          noLoad:definition.tracksWeight===false,
+          side:Boolean(definition.side || (definition.sideVariant&&definition.sideVariant===variant))
+        }));
+      }
+    });
+  });
+
+  return split;
 }
 
 function ensureBuiltInLoggingActivities(split){
@@ -848,7 +882,7 @@ function convertManagerWorkoutToLoggingExercise(workout){
       name:variant,
       variant,
       noLoad:source.tracksWeight===false,
-      side:Boolean(source.sideVariant && source.sideVariant===variant)
+      side:Boolean(source.side || (source.sideVariant && source.sideVariant===variant))
     }));
   }
 
@@ -869,6 +903,11 @@ function managerWorkoutPrescription(workout){
 
 
 const CUSTOM_EXERCISES_STORAGE_KEY="fitnessTrackerCustomExercises";
+let BUILT_IN_EXERCISE_OVERRIDES={};
+
+window.setBuiltInExerciseOverrides=function(overrides){
+  BUILT_IN_EXERCISE_OVERRIDES=overrides&&typeof overrides==="object"?overrides:{};
+};
 
 const MANAGER_EXERCISE_LIBRARY=[
   {id:"cycling",name:"Cycling",group:"Cardio",unit:"none",noVolume:true,tracksWeight:false,variants:[]},
@@ -911,7 +950,7 @@ const MANAGER_EXERCISE_LIBRARY=[
     variants:["Pec Deck","Cable"]},
   {id:"chest-biased-dip",name:"Chest-Biased Dip",group:"Chest",unit:"reps",tracksWeight:false,assistanceToggle:true,variants:[]},
 
-  {id:"lateral-raises",name:"Lateral Raises",group:"Shoulders",unit:"reps",tracksWeight:true,choiceLabel:"Equipment",
+  {id:"lateral-raises",name:"Lateral Raises",group:"Shoulders",unit:"reps",tracksWeight:true,side:true,choiceLabel:"Equipment",
     variants:["Cable","Dumbbell"]},
 
   {id:"cable-pushdown",name:"Cable Pushdown",group:"Triceps",unit:"reps",tracksWeight:true,variants:[]},
@@ -962,7 +1001,13 @@ function saveCustomExerciseLibrary(exercises){
 }
 
 function getManagerExerciseLibrary(){
-  return [...MANAGER_EXERCISE_LIBRARY,...getCustomExerciseLibrary()];
+  const builtIns=MANAGER_EXERCISE_LIBRARY.map(exercise=>({
+    ...exercise,
+    ...(BUILT_IN_EXERCISE_OVERRIDES[exercise.id]||{}),
+    id:exercise.id,
+    custom:false
+  }));
+  return [...builtIns,...getCustomExerciseLibrary()];
 }
 
 const CUSTOM_SPLITS_STORAGE_KEY="fitnessTrackerCustomSplits";
@@ -1100,6 +1145,8 @@ function saveCustomWorkoutToLibrary(){
     unit:noVolume?"none":(el.customWorkoutTimed.checked?"seconds":"reps"),
     noVolume,
     tracksWeight:noVolume?false:el.customWorkoutTracksWeight.checked,
+    side:Boolean(el.customWorkoutSide.checked),
+    assistanceToggle:Boolean(el.customWorkoutAssistance.checked),
     variants:el.customWorkoutHasAlternatives.checked?customWorkoutAlternativeDraft.slice():[],
     choiceLabel:el.customWorkoutHasAlternatives.checked?"Variation":null,
     custom:true,
@@ -1115,6 +1162,8 @@ function saveCustomWorkoutToLibrary(){
   el.customWorkoutTracksWeight.checked=true;
   el.customWorkoutTimed.checked=false;
   el.customWorkoutNoVolume.checked=false;
+  el.customWorkoutSide.checked=false;
+  el.customWorkoutAssistance.checked=false;
   el.customWorkoutHasAlternatives.checked=false;
   el.customAlternativesArea.hidden=true;
   customWorkoutAlternativeDraft=[];
@@ -2609,7 +2658,117 @@ function syncCommuteDateFromWorkoutDate(){
   el.commuteDate.value=`${year}-${month}-${day}`;
 }
 
+function buildTreadmillExerciseCard(exercise){
+  const card=document.createElement("article");
+  card.className="logging-exercise-card";
+
+  const head=document.createElement("div");
+  head.className="logging-exercise-head";
+  const title=document.createElement("h3");
+  title.textContent=exercise.name||"Treadmill";
+  const prescription=document.createElement("p");
+  prescription.className="exercise-prescription";
+  prescription.textContent="Duration · incline";
+  head.append(title,prescription);
+  card.appendChild(head);
+
+  const body=document.createElement("div");
+  body.className="exercise-logger-shell";
+
+  const compare=document.createElement("div");
+  compare.className="pr-compare-card";
+  body.appendChild(compare);
+
+  const form=document.createElement("div");
+  form.className="treadmill-form";
+
+  const minLabel=document.createElement("label");
+  minLabel.innerHTML='<span class="unit">Minutes</span>';
+  const minutes=document.createElement("input");
+  minutes.type="number";minutes.inputMode="numeric";minutes.min="0";minutes.step="1";minutes.placeholder="20";
+  minLabel.appendChild(minutes);
+
+  const secLabel=document.createElement("label");
+  secLabel.innerHTML='<span class="unit">Seconds</span>';
+  const seconds=document.createElement("input");
+  seconds.type="number";seconds.inputMode="numeric";seconds.min="0";seconds.max="59";seconds.step="1";seconds.placeholder="00";
+  secLabel.appendChild(seconds);
+
+  const inclineLabel=document.createElement("label");
+  inclineLabel.innerHTML='<span class="unit">Incline (%)</span>';
+  const incline=document.createElement("input");
+  incline.type="number";incline.inputMode="decimal";incline.step="0.1";incline.placeholder="0.0";
+  inclineLabel.appendChild(incline);
+
+  const button=document.createElement("button");
+  button.type="button";button.className="primary-button";button.textContent="Log Treadmill";
+
+  form.append(minLabel,secLabel,inclineLabel,button);
+  body.appendChild(form);
+
+  const message=document.createElement("p");
+  message.className="set-message";
+  body.appendChild(message);
+
+  const list=document.createElement("ul");
+  list.className="set-log-list";
+  body.appendChild(list);
+  card.appendChild(body);
+
+  const refresh=()=>{
+    renderPRComparison("treadmill",exercise,compare);
+    renderCurrentDateSetEntries("treadmill",list);
+  };
+  refresh();
+
+  button.addEventListener("click",()=>{
+    message.textContent="";
+    const date=normalizeWorkoutDate(el.strengthWorkoutDate.value);
+    if(!date){message.textContent="Enter a valid workout date first.";return}
+
+    const mins=Number(minutes.value||0);
+    const secs=Number(seconds.value||0);
+    const inclineValue=Number(incline.value||0);
+
+    if(!Number.isInteger(mins)||mins<0||!Number.isInteger(secs)||secs<0||secs>59){
+      message.textContent="Enter a valid MM:SS duration.";
+      return;
+    }
+
+    const total=Math.round(mins*60+secs);
+    if(total<=0){message.textContent="Treadmill duration must be greater than zero.";return}
+    if(!Number.isFinite(inclineValue)){message.textContent="Enter a valid incline.";return}
+
+    const split=getSelectedWorkoutSplit();
+    const logs=getSetLogs("treadmill");
+    logs.push({
+      id:makeLogId(),
+      date,
+      splitId:split?.id||null,
+      splitName:split?.name||null,
+      dayId:el.workoutDaySelector.value||null,
+      performedExerciseId:"treadmill",
+      performedExerciseName:"Treadmill",
+      load:null,
+      reps:total,
+      durationSeconds:total,
+      incline:inclineValue,
+      timestamp:Date.now()
+    });
+    saveSetLogs("treadmill",logs);
+    minutes.value="";seconds.value="";
+    refresh();
+    if(el.trackingExerciseSelector.value==="treadmill") renderProgressHistory();
+  });
+
+  return card;
+}
+
 function buildWorkingExerciseCard(exercise){
+  if((exercise.trackingId||exercise.id)==="treadmill"){
+    return buildTreadmillExerciseCard(exercise);
+  }
+
   const card=document.createElement("article");
   card.className="logging-exercise-card";
 
@@ -2761,7 +2920,7 @@ function managerLibraryExerciseToLoggingExercise(item){
       name:variant,
       variant,
       noLoad:item.tracksWeight===false,
-      side:Boolean(item.sideVariant && item.sideVariant===variant)
+      side:Boolean(item.side || (item.sideVariant && item.sideVariant===variant))
     }));
   }
 
@@ -2850,23 +3009,39 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
     assistanceWeightWrap=document.createElement("label");
     assistanceWeightWrap.className="assistance-weight";
     assistanceWeightWrap.hidden=true;
-    assistanceWeightWrap.innerHTML='<span class="unit">Assistance weight (lb)</span>';
+    assistanceWeightWrap.innerHTML='<span class="unit">Assistance (+) / added weight (−), lb</span>';
 
     assistanceWeight=document.createElement("input");
     assistanceWeight.type="number";
-    assistanceWeight.min="0";
     assistanceWeight.step="0.5";
-    assistanceWeight.placeholder="0";
+    assistanceWeight.placeholder="0 = none, negative = added weight";
     assistanceWeightWrap.appendChild(assistanceWeight);
 
     assistanceRow.append(checkLabel,assistanceWeightWrap);
     wrapper.appendChild(assistanceRow);
+
+    const bodyWeightWrap=document.createElement("label");
+    bodyWeightWrap.className="assistance-weight";
+    bodyWeightWrap.innerHTML='<span class="unit">Body / total weight for PR (lb)</span>';
+    const bodyWeightInput=document.createElement("input");
+    bodyWeightInput.type="number";
+    bodyWeightInput.min="1";
+    bodyWeightInput.step="0.5";
+    bodyWeightInput.placeholder="e.g. 180";
+    if(el.weightPounds?.value) bodyWeightInput.value=el.weightPounds.value;
+    bodyWeightWrap.appendChild(bodyWeightInput);
+    wrapper.appendChild(bodyWeightWrap);
+    exercise._bodyWeightInput=bodyWeightInput;
 
     assistedCheckbox.addEventListener("change",()=>{
       assistanceWeightWrap.hidden=!assistedCheckbox.checked;
       if(!assistedCheckbox.checked) assistanceWeight.value="";
     });
   }
+
+  const compare=document.createElement("div");
+  compare.className="pr-compare-card";
+  wrapper.appendChild(compare);
 
   const form=document.createElement("div");
   form.className="set-entry-form";
@@ -2941,6 +3116,10 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
       (exercise.id==="copenhagen-plank" ? "Seconds" : "Reps");
 
     renderCurrentDateSetEntries(storageId,list);
+    renderPRComparison(storageId,exercise,compare,{
+      side:resolved.side&&sideSelect?sideSelect.value:null,
+      variant:resolved.variant || (exercise.options ? resolved.name : null)
+    });
   }
 
   if(exerciseSelect) exerciseSelect.addEventListener("change",refreshResolvedUI);
@@ -2980,8 +3159,8 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
     let assistanceValue=null;
     if(exercise.assistanceToggle && assistedCheckbox && assistedCheckbox.checked){
       assistanceValue=Number(assistanceWeight.value);
-      if(!Number.isFinite(assistanceValue)||assistanceValue<0){
-        message.textContent="Enter a valid assistance weight.";
+      if(!Number.isFinite(assistanceValue)){
+        message.textContent="Enter a valid assistance / added weight.";
         assistanceWeight.focus();
         return;
       }
@@ -2991,6 +3170,16 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
       message.textContent=`${resolved.repsLabel==="Seconds" ? "Seconds" : "Reps"} must be a whole number of at least 1.`;
       reps.focus();
       return;
+    }
+
+    let bodyWeightValue=null;
+    if(exercise.assistanceToggle){
+      bodyWeightValue=Number(exercise._bodyWeightInput?.value);
+      if(!Number.isFinite(bodyWeightValue)||bodyWeightValue<=0){
+        message.textContent="Enter your body / total weight so the PR can be calculated.";
+        exercise._bodyWeightInput?.focus();
+        return;
+      }
     }
 
     const logs=getSetLogs(storageId);
@@ -3014,7 +3203,8 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
       side:resolved.side ? sideSelect.value : null,
       variant:resolved.variant || (exercise.options ? resolved.name : null),
       assisted:exercise.assistanceToggle && assistedCheckbox ? assistedCheckbox.checked : false,
-      assistanceWeight:exercise.assistanceToggle && assistedCheckbox && assistedCheckbox.checked ? assistanceValue : null,
+      assistanceWeight:exercise.assistanceToggle && assistedCheckbox && assistedCheckbox.checked ? assistanceValue : 0,
+      bodyWeight:bodyWeightValue,
       timestamp:Date.now()
     });
 
@@ -3022,6 +3212,10 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
 
     reps.value="";
     renderCurrentDateSetEntries(storageId,list);
+    renderPRComparison(storageId,exercise,compare,{
+      side:resolved.side&&sideSelect?sideSelect.value:null,
+      variant:resolved.variant || (exercise.options ? resolved.name : null)
+    });
 
     if(el.trackingExerciseSelector.value===storageId){
       renderProgressHistory();
@@ -3132,6 +3326,135 @@ function buildSubexerciseBox(subexercise){
   return box;
 }
 
+function exercisePRMetric(exercise,entry){
+  if(!entry) return null;
+
+  const id=exercise?.trackingId||exercise?.id||entry.performedExerciseId||"";
+  const isTimed=exercise?.repsLabel==="Seconds" ||
+    exercise?.unit==="seconds" ||
+    id==="copenhagen-plank" ||
+    id==="treadmill" ||
+    Number.isFinite(Number(entry.durationSeconds));
+
+  if(isTimed){
+    const seconds=Number(entry.durationSeconds ?? entry.reps);
+    return Number.isFinite(seconds) ? seconds : null;
+  }
+
+  const reps=Number(entry.reps);
+  if(!Number.isFinite(reps)) return null;
+
+  if(exercise?.assistanceToggle || entry.bodyWeight!==null && entry.bodyWeight!==undefined){
+    const body=Number(entry.bodyWeight);
+    const assistance=Number(entry.assistanceWeight||0);
+    if(!Number.isFinite(body)) return null;
+    return (body-assistance)*reps;
+  }
+
+  const load=Number(entry.load);
+  if(!Number.isFinite(load)) return null;
+  return load*reps;
+}
+
+function getExercisePR(exerciseId,exercise,filters={}){
+  const logs=getSetLogs(exerciseId).filter(entry=>logMatchesPRFilter(entry,filters));
+  let best=null;
+  let bestMetric=-Infinity;
+
+  logs.forEach(entry=>{
+    const metric=exercisePRMetric(exercise,entry);
+    if(metric!==null && metric>bestMetric){
+      bestMetric=metric;
+      best=entry;
+    }
+  });
+
+  return best ? {entry:best,metric:bestMetric} : null;
+}
+
+function logMatchesPRFilter(entry,filters){
+  if(filters.side && entry.side && entry.side!==filters.side) return false;
+  if(filters.variant && entry.variant && entry.variant!==filters.variant) return false;
+  return true;
+}
+
+function getPreviousDateLatestSet(exerciseId,currentDate,filters={}){
+  const current=dateSortValue(currentDate);
+  const candidates=getSetLogs(exerciseId)
+    .filter(entry=>{
+      if(!logMatchesPRFilter(entry,filters)) return false;
+      const date=dateSortValue(entry.date);
+      return Number.isFinite(date) && (!Number.isFinite(current) || date<current);
+    });
+
+  if(!candidates.length) return null;
+
+  const latestDate=Math.max(...candidates.map(entry=>dateSortValue(entry.date)));
+  return candidates
+    .filter(entry=>dateSortValue(entry.date)===latestDate)
+    .sort((a,b)=>(b.timestamp||0)-(a.timestamp||0))[0] || null;
+}
+
+function formatPRSet(exercise,entry,includeScore=false){
+  if(!entry) return "—";
+  const id=exercise?.trackingId||exercise?.id||entry.performedExerciseId||"";
+
+  if(id==="treadmill"){
+    return `${duration(Number(entry.durationSeconds??entry.reps))} · ${fmt(Number(entry.incline||0),1)}% incline`;
+  }
+
+  if(exercise?.repsLabel==="Seconds" || exercise?.unit==="seconds" || id==="copenhagen-plank"){
+    return `${duration(Number(entry.durationSeconds??entry.reps))}`;
+  }
+
+  const side=entry.side?`${entry.side} · `:"";
+  const variant=entry.variant?`${entry.variant} · `:"";
+
+  if(exercise?.assistanceToggle || entry.bodyWeight!==null && entry.bodyWeight!==undefined){
+    const body=Number(entry.bodyWeight);
+    const assistance=Number(entry.assistanceWeight||0);
+    const effective=Number.isFinite(body)?body-assistance:null;
+    return `${side}${variant}${effective!==null?`${formatLoad(effective)} effective lb × `:""}${entry.reps} reps`;
+  }
+
+  const load=entry.load===null||entry.load===undefined?"":`${formatLoad(entry.load)} lb × `;
+  return `${side}${variant}${load}${entry.reps} reps`;
+}
+
+function renderPRComparison(exerciseId,exercise,container,filters={}){
+  if(!container) return;
+  const date=normalizeWorkoutDate(el.strengthWorkoutDate?.value);
+  const pr=getExercisePR(exerciseId,exercise,filters);
+  const previous=getPreviousDateLatestSet(exerciseId,date,filters);
+
+  container.innerHTML="";
+
+  const prBox=document.createElement("div");
+  prBox.className="pr-compare-item";
+  prBox.innerHTML=`<span>Personal record</span><strong>${escapeHtml(pr?formatPRSet(exercise,pr.entry,true):"No PR yet")}</strong>`;
+
+  const previousBox=document.createElement("div");
+  previousBox.className="pr-compare-item";
+  previousBox.innerHTML=`<span>Previous workout${previous?.date?` · ${escapeHtml(previous.date)}`:""}</span><strong>${escapeHtml(previous?formatPRSet(exercise,previous):"No previous set")}</strong>`;
+
+  container.append(prBox,previousBox);
+}
+
+function appendTrackingPR(exercise,logs){
+  const allLogs=getLogsForTrackingExercise(exercise);
+  let best=null,bestMetric=-Infinity;
+
+  allLogs.forEach(entry=>{
+    const metric=exercisePRMetric(exercise,entry);
+    if(metric!==null&&metric>bestMetric){bestMetric=metric;best=entry}
+  });
+
+  const card=document.createElement("div");
+  card.className="progress-pr-card";
+  card.innerHTML=`<span>Personal record</span><strong>${escapeHtml(best?formatPRSet(exercise,best):"No PR yet")}</strong>`;
+  el.trackingResults.appendChild(card);
+}
+
 function renderCurrentDateSetEntries(exerciseId,list){
   const date=normalizeWorkoutDate(el.strengthWorkoutDate.value);
   const logs=getSetLogs(exerciseId)
@@ -3178,13 +3501,19 @@ function renderCurrentDateSetEntries(exerciseId,list){
 }
 
 function formatSetEntry(entry,index){
+  if(entry.performedExerciseId==="treadmill" || Number.isFinite(Number(entry.durationSeconds))){
+    return `Set ${index+1}: ${duration(Number(entry.durationSeconds??entry.reps))} · ${fmt(Number(entry.incline||0),1)}% incline`;
+  }
+
   const substitute=entry.substituted && entry.plannedExerciseName
     ? `Substitute for ${entry.plannedExerciseName} · `
     : "";
   const variant=entry.variant ? `${entry.variant} · ` : "";
   const side=entry.side ? `${entry.side} · ` : "";
   const assistance=entry.assisted
-    ? `Assisted ${formatLoad(entry.assistanceWeight)} lb · `
+    ? (Number(entry.assistanceWeight)<0
+        ? `Added ${formatLoad(Math.abs(Number(entry.assistanceWeight)))} lb · `
+        : `Assistance ${formatLoad(entry.assistanceWeight)} lb · `)
     : "";
   const load=entry.load===null || entry.load===undefined ? "" : `${formatLoad(entry.load)} lb x `;
   return `Set ${index+1}: ${substitute}${variant}${side}${assistance}${load}${entry.reps}`;
@@ -3204,6 +3533,243 @@ function saveSetLogs(exerciseId,logs){
 }
 
 
+
+
+let editingLibraryExercise=null;
+
+function setupExerciseLibrarySettings(){
+  el.refreshExerciseLibraryButton?.addEventListener("click",renderExerciseLibrarySettings);
+  el.exerciseLibrarySearch?.addEventListener("input",renderExerciseLibrarySettings);
+  el.closeExerciseEditorButton?.addEventListener("click",closeExerciseLibraryEditor);
+  el.saveExerciseEditorButton?.addEventListener("click",saveExerciseLibraryEdit);
+  el.deleteCustomExerciseButton?.addEventListener("click",deleteEditedCustomExercise);
+  el.resetBuiltInExerciseButton?.addEventListener("click",resetEditedBuiltInExercise);
+  renderExerciseLibrarySettings();
+}
+
+function renderExerciseLibrarySettings(){
+  if(!el.exerciseLibrarySettingsList) return;
+
+  const term=String(el.exerciseLibrarySearch?.value||"").trim().toLowerCase();
+  const custom=getCustomExerciseLibrary().map(item=>({...item,_kind:"custom"}));
+  const builtIn=window.currentUserIsAdmin
+    ? getManagerExerciseLibrary().filter(item=>!item.custom).map(item=>({...item,_kind:"builtIn"}))
+    : [];
+
+  const items=[...custom,...builtIn]
+    .filter(item=>!term || `${item.name} ${item.group}`.toLowerCase().includes(term))
+    .sort((a,b)=>a.group.localeCompare(b.group)||a.name.localeCompare(b.name));
+
+  el.exerciseLibrarySettingsList.innerHTML="";
+
+  if(!items.length){
+    const empty=document.createElement("div");
+    empty.className="managed-empty";
+    empty.textContent=window.currentUserIsAdmin
+      ? "No matching exercises."
+      : "No custom exercises yet.";
+    el.exerciseLibrarySettingsList.appendChild(empty);
+    return;
+  }
+
+  items.forEach(item=>{
+    const row=document.createElement("div");
+    row.className="exercise-library-row";
+
+    const copy=document.createElement("div");
+    const side=item.side?" · Left/Right":"";
+    const assist=item.assistanceToggle?" · Assistance":"";
+    copy.innerHTML=`<strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.group)} · ${item._kind==="builtIn"?"Built-in":"Custom"}${side}${assist}</span>`;
+
+    const actions=document.createElement("div");
+    actions.className="exercise-library-row-actions";
+
+    const edit=document.createElement("button");
+    edit.type="button";
+    edit.className="secondary-button";
+    edit.textContent="Edit";
+    edit.addEventListener("click",()=>openExerciseLibraryEditor(item));
+    actions.appendChild(edit);
+
+    row.append(copy,actions);
+    el.exerciseLibrarySettingsList.appendChild(row);
+  });
+}
+
+function openExerciseLibraryEditor(item){
+  editingLibraryExercise=deepClone(item);
+  el.exerciseLibraryEditor.hidden=false;
+  el.exerciseEditorType.textContent=item._kind==="builtIn"?"BUILT-IN EXERCISE":"CUSTOM EXERCISE";
+  el.exerciseEditorHeading.textContent=`Edit ${item.name}`;
+  el.exerciseEditorName.value=item.name||"";
+  el.exerciseEditorGroup.value=item.group||"Compound";
+  el.exerciseEditorTracksWeight.checked=Boolean(item.tracksWeight);
+  el.exerciseEditorTimed.checked=item.unit==="seconds";
+  el.exerciseEditorNoVolume.checked=Boolean(item.noVolume);
+  el.exerciseEditorSide.checked=Boolean(item.side);
+  el.exerciseEditorAssistance.checked=Boolean(item.assistanceToggle);
+  el.exerciseEditorVariants.value=(item.variants||[]).join("\n");
+  el.exerciseEditorChoiceLabel.value=item.choiceLabel||"";
+  el.exerciseEditorSideVariant.value=item.sideVariant||"";
+  el.exerciseEditorMessage.textContent="";
+  el.deleteCustomExerciseButton.hidden=item._kind!=="custom";
+  el.resetBuiltInExerciseButton.hidden=item._kind!=="builtIn" || !BUILT_IN_EXERCISE_OVERRIDES[item.id];
+  el.exerciseLibraryEditor.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function closeExerciseLibraryEditor(){
+  editingLibraryExercise=null;
+  if(el.exerciseLibraryEditor) el.exerciseLibraryEditor.hidden=true;
+}
+
+async function saveExerciseLibraryEdit(){
+  if(!editingLibraryExercise) return;
+
+  const name=el.exerciseEditorName.value.trim();
+  if(!name){
+    el.exerciseEditorMessage.textContent="Exercise name is required.";
+    return;
+  }
+
+  const previousSide=Boolean(editingLibraryExercise.side);
+  const noVolume=el.exerciseEditorNoVolume.checked;
+  const updated={
+    ...editingLibraryExercise,
+    name,
+    group:el.exerciseEditorGroup.value,
+    tracksWeight:noVolume?false:el.exerciseEditorTracksWeight.checked,
+    unit:noVolume?"none":(el.exerciseEditorTimed.checked?"seconds":"reps"),
+    noVolume,
+    side:Boolean(el.exerciseEditorSide.checked),
+    assistanceToggle:Boolean(el.exerciseEditorAssistance.checked),
+    variants:el.exerciseEditorVariants.value.split(/\r?\n/).map(v=>v.trim()).filter(Boolean),
+    choiceLabel:el.exerciseEditorChoiceLabel.value.trim()||null,
+    sideVariant:el.exerciseEditorSideVariant.value.trim()||null,
+    updatedAt:Date.now()
+  };
+
+  delete updated._kind;
+
+  try{
+    if(editingLibraryExercise._kind==="custom"){
+      const library=getCustomExerciseLibrary();
+      const index=library.findIndex(item=>item.id===updated.id);
+      if(index<0) throw new Error("Custom exercise could not be found.");
+      library[index]=updated;
+      saveCustomExerciseLibrary(library);
+      propagateExerciseDefinitionToSplits(updated);
+    }else{
+      if(!window.currentUserIsAdmin) throw new Error("Administrator access is required.");
+      if(typeof window.saveBuiltInExerciseOverride!=="function") throw new Error("Shared exercise service is unavailable.");
+      await window.saveBuiltInExerciseOverride(updated.id,updated);
+      BUILT_IN_EXERCISE_OVERRIDES[updated.id]=updated;
+    }
+
+    if(!previousSide && updated.side){
+      migrateLegacySideLogsForExercise(updated.id);
+    }
+
+    el.exerciseEditorMessage.style.color="var(--success)";
+    el.exerciseEditorMessage.textContent="Exercise saved.";
+    editingLibraryExercise={...updated,_kind:editingLibraryExercise._kind};
+    el.resetBuiltInExerciseButton.hidden=editingLibraryExercise._kind!=="builtIn";
+    renderExerciseLibrarySettings();
+    refreshWorkoutSplitSelector();
+    populateTrackingExercises();
+  }catch(error){
+    console.error(error);
+    el.exerciseEditorMessage.style.color="var(--danger)";
+    el.exerciseEditorMessage.textContent=error.message||"Unable to save exercise.";
+  }
+}
+
+function propagateExerciseDefinitionToSplits(definition){
+  const splits=getCustomSplits();
+  let changed=false;
+
+  splits.forEach(split=>{
+    (split.days||[]).forEach(day=>{
+      (day.workouts||[]).forEach(workout=>{
+        if(workout.exerciseId!==definition.id) return;
+        workout.name=definition.name;
+        workout.type=definition.group;
+        workout.unit=definition.unit;
+        workout.noVolume=Boolean(definition.noVolume);
+        workout.tracksWeight=Boolean(definition.tracksWeight);
+        workout.assistanceToggle=Boolean(definition.assistanceToggle);
+        workout.variants=(definition.variants||[]).slice();
+        workout.choiceLabel=definition.choiceLabel||null;
+        workout.side=Boolean(definition.side);
+        workout.sideVariant=definition.sideVariant||null;
+        changed=true;
+      });
+    });
+  });
+
+  if(changed) saveCustomSplits(splits);
+}
+
+function deleteEditedCustomExercise(){
+  if(!editingLibraryExercise || editingLibraryExercise._kind!=="custom") return;
+
+  if(!window.confirm(
+    `Delete "${editingLibraryExercise.name}" from your exercise library?\n\n`+
+    "Historical logs will be preserved. Existing split entries are also preserved until you remove or replace them in Split Manager."
+  )) return;
+
+  saveCustomExerciseLibrary(
+    getCustomExerciseLibrary().filter(item=>item.id!==editingLibraryExercise.id)
+  );
+  closeExerciseLibraryEditor();
+  renderExerciseLibrarySettings();
+}
+
+async function resetEditedBuiltInExercise(){
+  if(!editingLibraryExercise || editingLibraryExercise._kind!=="builtIn" || !window.currentUserIsAdmin) return;
+  if(!window.confirm(`Reset "${editingLibraryExercise.name}" to the built-in app definition for every user?`)) return;
+
+  try{
+    await window.deleteBuiltInExerciseOverride?.(editingLibraryExercise.id);
+    delete BUILT_IN_EXERCISE_OVERRIDES[editingLibraryExercise.id];
+    closeExerciseLibraryEditor();
+    renderExerciseLibrarySettings();
+    refreshWorkoutSplitSelector();
+  }catch(error){
+    el.exerciseEditorMessage.textContent=error.message||"Unable to reset built-in exercise.";
+  }
+}
+
+function migrateLegacySideLogsForExercise(exerciseId){
+  const logs=getSetLogs(exerciseId);
+  if(!logs.length) return;
+
+  const byDate=new Map();
+  logs.forEach(log=>{
+    const date=log.date||"";
+    if(!byDate.has(date)) byDate.set(date,[]);
+    byDate.get(date).push(log);
+  });
+
+  let changed=false;
+
+  byDate.forEach(dateLogs=>{
+    dateLogs.sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
+    dateLogs.forEach((log,index)=>{
+      if(!log.side){
+        log.side=index%2===0?"Left":"Right";
+        changed=true;
+      }
+    });
+  });
+
+  if(changed) saveSetLogs(exerciseId,logs);
+}
+
+function migrateKnownSideExerciseLogs(){
+  getManagerExerciseLibrary()
+    .filter(item=>item.side)
+    .forEach(item=>migrateLegacySideLogsForExercise(item.id));
+}
 
 function setupSettingsPersistence(){
   loadSavedSettings();
@@ -3756,7 +4322,12 @@ function openLogDetailSheet(entry,context={}){
       rows.push(["Loading",`${formatLoad(entry.load)} lb`]);
     }
 
-    rows.push([context.exercise?.id==="copenhagen-plank" ? "Seconds" : "Reps",String(entry.reps ?? "—")]);
+    if(context.exercise?.id==="treadmill" || Number.isFinite(Number(entry.durationSeconds))){
+      rows.push(["Duration",duration(Number(entry.durationSeconds??entry.reps))]);
+      rows.push(["Incline",`${fmt(Number(entry.incline||0),1)}%`]);
+    }else{
+      rows.push([context.exercise?.id==="copenhagen-plank" ? "Seconds" : "Reps",String(entry.reps ?? "—")]);
+    }
   }
 
   el.logDetailContent.innerHTML="";
@@ -4132,6 +4703,7 @@ function renderProgressHistory(){
     `<h3>${escapeHtml(exercise.name)}</h3>`+
     `<div class="tracking-meta">${logs.length} logged set${logs.length===1?"":"s"} in ${escapeHtml(trackingMonthLabel(logs))}${exercise.prescription ? " · "+escapeHtml(exercise.prescription) : ""}</div>`;
   el.trackingResults.appendChild(summary);
+  appendTrackingPR(exercise,logs);
 
   if(!logs.length){
     const empty=document.createElement("div");
@@ -4163,8 +4735,9 @@ function buildStrengthProgressChart(exercise,logs,dragonLevels){
     yLabel="Loading (lb)";
     yValue=entry=>Number(entry.load);
   }else{
-    yLabel=exercise.id==="copenhagen-plank" ? "Seconds" : "Reps";
-    yValue=entry=>Number(entry.reps);
+    const timed=exercise.id==="copenhagen-plank" || exercise.id==="treadmill" || exercise.unit==="seconds";
+    yLabel=timed ? "Duration (sec)" : "Reps";
+    yValue=entry=>timed ? Number(entry.durationSeconds??entry.reps) : Number(entry.reps);
   }
 
   const wrapper=document.createElement("div");
@@ -4240,7 +4813,12 @@ function buildStrengthProgressChart(exercise,logs,dragonLevels){
       const side=entry.side?` · ${entry.side}`:"";
       const assist=entry.assisted?` · Assisted ${formatLoad(entry.assistanceWeight)} lb`:"";
       const load=entry.load!==null&&entry.load!==undefined?` · ${formatLoad(entry.load)} lb`:"";
-      return `${item.dataset.label}${variant}${side}${assist}${load} · ${entry.reps} ${exercise.id==="copenhagen-plank"?"sec":"reps"}`;
+      if(exercise.id==="treadmill"){
+        return `${item.dataset.label} · ${duration(Number(entry.durationSeconds??entry.reps))} · ${fmt(Number(entry.incline||0),1)}% incline`;
+      }
+      const timed=exercise.id==="copenhagen-plank" || exercise.unit==="seconds";
+      return `${item.dataset.label}${variant}${side}${assist}${load} · ${timed?duration(Number(entry.durationSeconds??entry.reps)):`${entry.reps} reps`}`;
+      
     }
   };
 
@@ -4392,9 +4970,18 @@ function renderStrengthLogList(exercise,logs){
     const details=document.createElement("span");
     const variant=entry.variant ? `${entry.variant} · ` : "";
     const side=entry.side ? `${entry.side} · ` : "";
-    const assistance=entry.assisted ? `Assisted ${formatLoad(entry.assistanceWeight)} lb · ` : "";
+    const assistance=entry.assisted
+      ? (Number(entry.assistanceWeight)<0
+          ? `Added ${formatLoad(Math.abs(Number(entry.assistanceWeight)))} lb · `
+          : `Assistance ${formatLoad(entry.assistanceWeight)} lb · `)
+      : "";
     const load=entry.load===null || entry.load===undefined ? "" : `${formatLoad(entry.load)} lb x `;
-    details.textContent=`Set ${currentNumber}: ${variant}${side}${assistance}${load}${entry.reps}`;
+
+    if(exercise.id==="treadmill" || Number.isFinite(Number(entry.durationSeconds))){
+      details.textContent=`Set ${currentNumber}: ${duration(Number(entry.durationSeconds??entry.reps))} · ${fmt(Number(entry.incline||0),1)}% incline`;
+    }else{
+      details.textContent=`Set ${currentNumber}: ${variant}${side}${assistance}${load}${entry.reps}`;
+    }
 
     const storageId=entry._storageId || exercise.id;
     const remove=createTrackingDeleteButton(
@@ -4402,7 +4989,9 @@ function renderStrengthLogList(exercise,logs){
       ()=>{
         const confirmed=window.confirm(
           `Delete this ${exercise.name} log?\n\n`+
-          `${entry.date} — ${variant}${side}${assistance}${load}${entry.reps}\n\n`+
+          `${entry.date} — ${exercise.id==="treadmill"
+            ? `${duration(Number(entry.durationSeconds??entry.reps))} · ${fmt(Number(entry.incline||0),1)}% incline`
+            : `${variant}${side}${assistance}${load}${entry.reps}`}\n\n`+
           `This action cannot be undone.`
         );
         if(!confirmed) return;
@@ -4872,7 +5461,19 @@ function escapeHtml(value){
   return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[char]));
 }
 
+function syncCommuteTimeFields(){
+  const minutes=Math.max(0,Number(el.commuteMinutes?.value||0));
+  const seconds=Math.max(0,Math.min(59,Number(el.commuteSeconds?.value||0)));
+  if(el.commuteSeconds && el.commuteSeconds.value!=="" && Number(el.commuteSeconds.value)>59){
+    el.commuteSeconds.value="59";
+  }
+  if(el.commuteTime){
+    el.commuteTime.value=`${Math.floor(minutes)}:${String(Math.floor(seconds)).padStart(2,"0")}`;
+  }
+}
+
 function update(){
+  syncCommuteTimeFields();
   inputIds.forEach(id=>el[id].removeAttribute("aria-invalid"));
   try{
     const r=calculate();
@@ -5000,5 +5601,7 @@ window.initializeFitnessApp=function(){
   setupWorkoutTracking();
   setupCyclingLogging();
   setupSettingsPersistence();
+  setupExerciseLibrarySettings();
+  migrateKnownSideExerciseLogs();
   update();
 };

@@ -251,6 +251,8 @@
                   <label class="custom-check"><input id="customWorkoutTracksWeight" type="checkbox" checked> <span>Track loading / weight</span></label>
                   <label class="custom-check"><input id="customWorkoutTimed" type="checkbox"> <span>Use seconds instead of reps</span></label>
                   <label class="custom-check"><input id="customWorkoutNoVolume" type="checkbox"> <span>No sets or range (cardio-style)</span></label>
+                  <label class="custom-check"><input id="customWorkoutSide" type="checkbox"> <span>Log Left / Right separately</span></label>
+                  <label class="custom-check"><input id="customWorkoutAssistance" type="checkbox"> <span>Allow assistance / added weight</span></label>
                 </div>
 
                 <label class="custom-check builder-span-2">
@@ -327,8 +329,13 @@
       <div class="form-grid">
         <label class="field">
           <span class="label-row"><span class="label">Commute time <span class="req">*</span></span><span class="unit">mm:ss</span></span>
-          <input id="commuteTime" type="text" inputmode="numeric" value="" placeholder="29:00">
-          <span class="hint">Example: 29:00</span>
+          <div class="duration-input-row">
+            <label><span class="unit">Minutes</span><input id="commuteMinutes" type="number" inputmode="numeric" min="0" step="1" placeholder="29"></label>
+            <span class="duration-colon">:</span>
+            <label><span class="unit">Seconds</span><input id="commuteSeconds" type="number" inputmode="numeric" min="0" max="59" step="1" placeholder="00"></label>
+          </div>
+          <input id="commuteTime" type="hidden" value="">
+          <span class="hint">Logged as MM:SS. Both fields use the iPhone numeric keypad.</span>
         </label>
 
         <label class="field">
@@ -588,6 +595,61 @@
           <input id="deadTrafficSeconds" type="number" value="90" min="0" step="1">
         </label>
       </div>
+
+      <section class="exercise-library-settings">
+        <div class="exercise-library-heading">
+          <div>
+            <span class="eyebrow">EXERCISE LIBRARY</span>
+            <strong>Manage Workouts</strong>
+            <span class="sub">Edit or delete your custom exercises. Administrators can also edit shared built-in exercises.</span>
+          </div>
+          <button id="refreshExerciseLibraryButton" class="secondary-button" type="button">Refresh</button>
+        </div>
+
+        <label class="exercise-library-search">
+          <span class="visually-hidden">Search exercise library</span>
+          <input id="exerciseLibrarySearch" type="search" placeholder="Search exercises">
+        </label>
+
+        <div id="exerciseLibrarySettingsList" class="exercise-library-settings-list"></div>
+
+        <section id="exerciseLibraryEditor" class="exercise-library-editor" hidden>
+          <div class="exercise-library-editor-head">
+            <div>
+              <span id="exerciseEditorType" class="eyebrow">CUSTOM EXERCISE</span>
+              <h3 id="exerciseEditorHeading">Edit exercise</h3>
+            </div>
+            <button id="closeExerciseEditorButton" class="sheet-close" type="button" aria-label="Close editor">×</button>
+          </div>
+
+          <div class="exercise-editor-grid">
+            <label><span class="unit">Name</span><input id="exerciseEditorName" type="text"></label>
+            <label><span class="unit">Group</span>
+              <select id="exerciseEditorGroup">
+                <option>Cardio</option><option>Compound</option><option>Back</option><option>Biceps</option>
+                <option>Chest</option><option>Shoulders</option><option>Triceps</option><option>Forearms</option>
+                <option value="Quadriceps">Quads</option><option>Hamstrings</option><option>Glutes</option>
+                <option>Calves</option><option>Core</option>
+              </select>
+            </label>
+            <label class="custom-check"><input id="exerciseEditorTracksWeight" type="checkbox"> <span>Track loading / weight</span></label>
+            <label class="custom-check"><input id="exerciseEditorTimed" type="checkbox"> <span>Duration instead of reps</span></label>
+            <label class="custom-check"><input id="exerciseEditorNoVolume" type="checkbox"> <span>No prescribed sets / range</span></label>
+            <label class="custom-check"><input id="exerciseEditorSide" type="checkbox"> <span>Log Left / Right separately</span></label>
+            <label class="custom-check"><input id="exerciseEditorAssistance" type="checkbox"> <span>Allow assistance / added weight</span></label>
+            <label class="exercise-editor-span"><span class="unit">Variations, one per line</span><textarea id="exerciseEditorVariants" rows="4" placeholder="Cable&#10;Dumbbell"></textarea></label>
+            <label><span class="unit">Variation label</span><input id="exerciseEditorChoiceLabel" type="text" placeholder="Equipment"></label>
+            <label><span class="unit">Side-only variation (optional)</span><input id="exerciseEditorSideVariant" type="text" placeholder="One Arm"></label>
+          </div>
+
+          <div class="exercise-editor-actions">
+            <button id="saveExerciseEditorButton" class="primary-button" type="button">Save Changes</button>
+            <button id="resetBuiltInExerciseButton" class="secondary-button" type="button" hidden>Reset Built-In</button>
+            <button id="deleteCustomExerciseButton" class="danger-button" type="button" hidden>Delete Custom Exercise</button>
+          </div>
+          <p id="exerciseEditorMessage" class="builder-message" aria-live="polite"></p>
+        </section>
+      </section>
 
       <section class="install-settings-card">
         <div class="install-settings-copy">

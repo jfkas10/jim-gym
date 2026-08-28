@@ -20,6 +20,11 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(ownUserId())).data.role == "admin";
     }
 
+    match /sharedExerciseOverrides/{exerciseId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     match /users/{userId} {
       // Owners can read themselves. Admins can read user profiles for the dashboard.
       allow read: if isOwner(userId) || isAdmin();

@@ -19,6 +19,7 @@ import {
   deleteUserCloudData
 } from "./sync.js";
 import { configureAdminAccess } from "./admin.js";
+import { loadSharedExerciseOverrides, saveSharedExerciseOverride, deleteSharedExerciseOverride } from "./sync.js";
 
 const $=id=>document.getElementById(id);
 
@@ -70,7 +71,8 @@ async function updateAccountUI(user){
 
   try{
     const profile=await getUserProfile(user.uid);
-    if(role) role.textContent=profile?.role==="admin" ? "Administrator" : "Private account";
+    window.currentUserIsAdmin=profile?.role==="admin";
+    if(role) role.textContent=window.currentUserIsAdmin ? "Administrator" : "Private account";
     configureAdminAccess(user,profile);
   }catch{
     if(role) role.textContent="Private account";
@@ -107,6 +109,11 @@ async function showAuthenticatedApp(user){
 
   try{
     await ensureUserProfile(user);
+
+    const sharedOverrides=await loadSharedExerciseOverrides();
+    window.setBuiltInExerciseOverrides?.(sharedOverrides);
+    window.saveBuiltInExerciseOverride=saveSharedExerciseOverride;
+    window.deleteBuiltInExerciseOverride=deleteSharedExerciseOverride;
 
     // The pre-account migration happens before first cloud synchronization.
     maybeMigrateLegacyData(user);

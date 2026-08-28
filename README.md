@@ -1,111 +1,96 @@
-# Fitness Progress Tracker v26.3
+# Jim Gym Fitness Progress — v26.4
 
-v26.3 turns the Firebase fitness tracker into an installable Progressive Web App (PWA), with special support for iPhone Home Screen installation.
+v26.4 adds exercise-library management, better phone-friendly time entry, treadmill logging, and personal records.
 
-## New in v26.3
+## New features
 
-- Web App Manifest
-- iPhone Home Screen icon
-- Standalone/full-screen display mode
-- iPhone safe-area support
-- Service worker for the application shell
-- Runtime caching of Chart.js/Firebase JavaScript libraries after first successful online load
-- Offline status banner
-- In-app iPhone installation instructions
-- Existing Firebase Authentication, Firestore sync, and Admin dashboard remain intact
+### Exercise library management
+Settings now contains **Manage Workouts**.
 
-## Important: iPhone installation requires HTTPS
+Normal users can:
+- Edit their custom exercises
+- Change name and muscle group
+- Toggle loading, duration, Left/Right logging, and assistance
+- Edit variations
+- Delete custom exercises
 
-`http://localhost:8000` is fine for development on your computer, but your girlfriend cannot install that local address on her iPhone.
+Historical logs are preserved when a custom exercise is deleted.
 
-Deploy this project to an HTTPS host. GitHub Pages is suitable and free.
+Administrators can additionally edit the shared built-in exercise definitions. Built-in edits are stored in Firestore under:
 
-## Deploy with GitHub Pages
+    sharedExerciseOverrides/<exercise-id>
 
-1. Create or open the GitHub repository you want to use.
-2. Upload **the contents of this v26.3 folder** to the repository root:
-   - `index.html`
-   - `manifest.webmanifest`
-   - `service-worker.js`
-   - `firestore.rules`
-   - `css/`
-   - `js/`
-   - `assets/`
-3. Commit and push the files.
-4. On GitHub:
-   - Repository > Settings > Pages
-   - Under Build and deployment, select **Deploy from a branch**
-   - Branch: `main`
-   - Folder: `/ (root)`
-   - Save
-5. GitHub will provide an HTTPS URL such as:
+and are loaded by all signed-in users.
 
-       https://YOUR-NAME.github.io/YOUR-REPOSITORY/
+Admins can also reset an edited built-in exercise to the app default.
 
-## REQUIRED Firebase setting for GitHub Pages
+### Lateral raises
+The built-in Lateral Raises exercise now logs Left and Right separately.
 
-In Firebase Console:
+For existing lateral-raise logs that do not contain a side, v26.4 automatically migrates each workout date using:
 
-Authentication > Settings > Authorized domains
+    Set 1 = Left
+    Set 2 = Right
+    Set 3 = Left
+    Set 4 = Right
+    ...
 
-Add:
+The same migration is applied if a previously non-sided exercise is changed to Left/Right in the exercise editor.
 
-    YOUR-NAME.github.io
+### Treadmill
+Treadmill logging now includes:
+- Minutes
+- Seconds
+- Incline percentage
 
-Do not add the repository path. Firebase authorization is domain-based.
+Stored treadmill durations display as MM:SS.
 
-Your existing v26.2 Firestore rules remain valid for v26.3.
+### Cycling time on iPhone
+Cycling commute time now uses separate **Minutes** and **Seconds** number fields, so the iPhone numeric keypad works without requiring a colon key.
 
-## Install on your iPhone
+The saved/logged value is still stored as MM:SS.
 
-1. Open the GitHub Pages URL in **Safari**.
-2. Sign in once while online.
-3. Tap Safari's **Share** button.
-4. Scroll down and tap **Add to Home Screen**.
-5. Leave the name as **Jim Gym** and tap **Add**.
-6. Launch Jim Gym from the new Home Screen icon.
+### Personal records
+Strength exercises now calculate a PR.
 
-## Install on your girlfriend's iPhone
+Weighted exercise:
 
-Send her the same GitHub Pages URL.
+    PR score = loading × reps
 
-She should:
+Assisted/bodyweight exercise:
 
-1. Open it in Safari.
-2. Register/sign in with **her own Firebase account**.
-3. Tap Share > Add to Home Screen > Add.
-4. Open the Jim Gym Home Screen app.
+    PR score = (body weight - assistance weight) × reps
 
-Her Firebase UID keeps her workout history separate from yours.
+A negative assistance value represents added weight, so:
 
-## Offline behavior
+    body weight - (-added weight)
 
-The PWA application shell is cached after an online visit. Workout data also continues to use the user-specific local cache.
+correctly increases effective resistance.
 
-Important limitations:
-- A first-ever launch needs internet access.
-- Signing into an account that has never authenticated on that device needs internet access.
-- Firestore synchronization resumes when the device has a connection.
-- Firebase Authentication/Firestore network requests are deliberately not stored in the service-worker cache.
+Timed exercises:
 
-## Updating the installed app
+    PR = maximum duration
 
-When a new version is deployed to GitHub Pages, the service worker checks for updated files. Safari may briefly use the previous cached shell; reopening the Home Screen app normally loads the updated version.
+Workout Logging displays:
+- Personal record
+- Most recent set from the most recent previous workout date
 
-## Development
+Workout Tracking also displays the exercise PR.
 
-For local testing:
+### Firestore rules
+v26.4 adds a shared exercise override collection.
 
-    python -m http.server 8000
+You MUST publish the included `firestore.rules` before administrators can edit built-in exercises.
 
-Open:
+The rules allow:
+- All signed-in users to read shared built-in exercise overrides
+- Only admins to create/update/delete them
+- Existing per-user privacy rules remain in place
 
-    http://localhost:8000
+## Deployment
 
-## Firebase
+This is the **flat GitHub Pages build**. Upload every file directly into the repository root, matching the structure used by your current `jim-gym` repository.
 
-Keep the current v26.2/v26.3 Firestore rules published. The admin dashboard remains read-only for other users.
+After deployment, the v26.4 service-worker cache name is new, so installed iPhones should pick up the update. If an iPhone still shows the previous version, fully close the Home Screen app and reopen it while online.
 
-
-## Flat GitHub layout
-This package is patched so every file can live directly in the repository root. Do not create css/js/assets folders for this build.
+For desktop debugging, a hard refresh or service-worker unregister may be useful.
