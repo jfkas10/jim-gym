@@ -20,6 +20,20 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(ownUserId())).data.role == "admin";
     }
 
+    match /publicProgress/{adminUid} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn()
+                                    && request.auth.uid == adminUid
+                                    && isAdmin();
+
+      match /appData/{documentId} {
+        allow read: if signedIn();
+        allow create, update, delete: if signedIn()
+                                      && request.auth.uid == adminUid
+                                      && isAdmin();
+      }
+    }
+
     match /sharedExerciseOverrides/{exerciseId} {
       allow read: if signedIn();
       allow create, update, delete: if isAdmin();

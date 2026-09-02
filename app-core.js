@@ -19,7 +19,7 @@ const outputIds=[
 ];
 
 const tabIds=["splitManager","workoutLogging","workoutTracking","admin","settings"];
-const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage"];
+const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage","viewJamesProgressButton","publicProgressBanner","publicProgressName"];
 const el=Object.fromEntries(
   [...inputIds,...outputIds,"validationMessage","advancedResults","showAdvancedResults",
    ...workoutElementIds,...tabIds.flatMap(name=>[name+"Tab",name+"Panel"])]
@@ -123,13 +123,23 @@ function updateTrackingDashboard(){
   const exerciseIds=new Set();
   let setCount=0;
 
-  for(let i=0;i<appStorage.length;i++){
-    const key=appStorage.key(i);
-    if(!key || !key.startsWith("workoutSetLogs:")) continue;
+  const trackingEntries=[];
+
+  if(isPublicTrackingView()){
+    Object.entries(publicAdminProgress.data||{}).forEach(([key,value])=>trackingEntries.push([key,value]));
+  }else{
+    for(let i=0;i<appStorage.length;i++){
+      const key=appStorage.key(i);
+      if(key) trackingEntries.push([key,appStorage.getItem(key)]);
+    }
+  }
+
+  trackingEntries.forEach(([key,value])=>{
+    if(!key.startsWith("workoutSetLogs:")) return;
 
     let logs=[];
-    try{logs=JSON.parse(appStorage.getItem(key)||"[]")}catch{logs=[]}
-    if(!Array.isArray(logs)) continue;
+    try{logs=JSON.parse(value||"[]")}catch{logs=[]}
+    if(!Array.isArray(logs)) return;
 
     const monthly=logs.filter(entry=>isCurrentMonth(entry.date));
     if(monthly.length){
@@ -137,18 +147,21 @@ function updateTrackingDashboard(){
       monthly.forEach(entry=>workoutDates.add(entry.date));
       setCount+=monthly.length;
     }
-  }
+  });
 
-  const rides=getCyclingLogs().filter(entry=>isCurrentMonth(entry.date));
+  const rides=getTrackingCyclingLogs().filter(entry=>isCurrentMonth(entry.date));
   rides.forEach(entry=>workoutDates.add(entry.date));
 
   el.dashboardWorkoutDays.textContent=String(workoutDates.size);
   el.dashboardSetCount.textContent=String(setCount);
   el.dashboardRideCount.textContent=String(rides.length);
   el.dashboardExerciseCount.textContent=String(exerciseIds.size);
-  el.trackingDashboardMonth.textContent=new Intl.DateTimeFormat(undefined,{
+  const monthLabel=new Intl.DateTimeFormat(undefined,{
     month:"long",year:"numeric"
   }).format(now);
+  el.trackingDashboardMonth.textContent=isPublicTrackingView()
+    ? `${publicAdminProgress.displayName||"James"} · ${monthLabel}`
+    : monthLabel;
 }
 
 function setupWorkoutAccordion(container){
@@ -2273,12 +2286,15 @@ function setupWorkoutLogging(){
     el.workoutDaySelector.disabled=!hasSplit;
 
     if(hasSplit){
-      el.strengthWorkoutDate.focus();
+      if(typeof el.strengthWorkoutDate.showPicker==="function"){
+        try{el.strengthWorkoutDate.showPicker()}catch{}
+      }else{
+        el.strengthWorkoutDate.focus();
+      }
     }
   });
 
-  el.strengthWorkoutDate.addEventListener("input",()=>{
-    formatDateTyping(el.strengthWorkoutDate);
+  el.strengthWorkoutDate.addEventListener("change",()=>{
     syncCommuteDateFromWorkoutDate();
     if(el.workoutDaySelector.value) renderSelectedWorkoutDay();
   });
@@ -2408,6 +2424,118 @@ const CENTRAL_TRACKING_VARIANT_NAMES={
   "cable-crunch":"Cable"
 };
 
+let trackingViewerMode="self";
+let publicAdminProgress={uid:null,displayName:"James",data:{}};
+
+function isPublicTrackingView(){
+  return trackingViewerMode==="james";
+}
+
+function parseTrackingStoredValue(key){
+  if(!isPublicTrackingView()){
+    return appStorage.getItem(key);
+  }
+
+  const value=publicAdminProgress.data?.[key];
+  return value===undefined ? null : value;
+}
+
+function getTrackingSetLogs(exerciseId){
+  try{
+    const data=JSON.parse(parseTrackingStoredValue("workoutSetLogs:"+exerciseId)||"[]");
+    return Array.isArray(data)?data:[];
+  }catch{
+    return [];
+  }
+}
+
+function getTrackingCyclingLogs(){
+  try{
+    const data=JSON.parse(parseTrackingStoredValue("cyclingActivityLogs")||"[]");
+    return Array.isArray(data)?data:[];
+  }catch{
+    return [];
+  }
+}
+
+function getPublicCustomExerciseLibrary(){
+  try{
+    const data=JSON.parse(parseTrackingStoredValue(CUSTOM_EXERCISES_STORAGE_KEY)||"[]");
+    return Array.isArray(data)?data:[];
+  }catch{
+    return [];
+  }
+}
+
+function getTrackingExerciseLibrary(){
+  if(!isPublicTrackingView()) return getManagerExerciseLibrary();
+
+  const builtIns=MANAGER_EXERCISE_LIBRARY.map(exercise=>({
+    ...exercise,
+    ...(BUILT_IN_EXERCISE_OVERRIDES[exercise.id]||{}),
+    id:exercise.id,
+    custom:false
+  }));
+
+  return [...builtIns,...getPublicCustomExerciseLibrary()];
+}
+
+async function toggleJamesProgressView(){
+  if(isPublicTrackingView()){
+    trackingViewerMode="self";
+    publicAdminProgress={uid:null,displayName:"James",data:{}};
+    el.viewJamesProgressButton.textContent="See how James is doing";
+    el.publicProgressBanner.hidden=true;
+    resetTrackingForViewerChange();
+    return;
+  }
+
+  if(typeof window.loadPublishedAdminProgress!=="function"){
+    el.trackingResults.innerHTML='<div class="empty-state">James\'s public progress is not available yet.</div>';
+    return;
+  }
+
+  const original=el.viewJamesProgressButton.textContent;
+  el.viewJamesProgressButton.disabled=true;
+  el.viewJamesProgressButton.textContent="Loading James…";
+
+  try{
+    const result=await window.loadPublishedAdminProgress();
+
+    if(!result){
+      el.trackingResults.innerHTML='<div class="empty-state">James has not published workout progress yet. Ask him to open the latest app while online once.</div>';
+      return;
+    }
+
+    publicAdminProgress=result;
+    trackingViewerMode="james";
+
+    const displayName=result.displayName||"James";
+    el.publicProgressName.textContent=displayName;
+    el.viewJamesProgressButton.textContent="Back to my progress";
+    el.publicProgressBanner.hidden=false;
+
+    resetTrackingForViewerChange();
+  }catch(error){
+    console.error(error);
+    el.trackingResults.innerHTML='<div class="empty-state">James\'s workout progress could not be loaded. Check your connection and Firestore rules.</div>';
+  }finally{
+    el.viewJamesProgressButton.disabled=false;
+    if(!isPublicTrackingView()) el.viewJamesProgressButton.textContent=original;
+  }
+}
+
+function resetTrackingForViewerChange(){
+  destroyTrackingCharts();
+  el.trackingMuscleGroup.value="";
+  el.trackingExerciseSelector.innerHTML='<option value="">Select a muscle group first…</option>';
+  el.trackingExerciseSelector.disabled=true;
+  el.trackingResults.innerHTML=isPublicTrackingView()
+    ? '<div class="empty-state">Choose a muscle group and exercise to review James\'s progress.</div>'
+    : '<div class="empty-state">Choose an exercise and time range to review its history.</div>';
+  updateTrackingDashboard();
+}
+
 function setupWorkoutTracking(){
   TRACKING_MUSCLE_GROUPS.forEach(group=>{
     const option=document.createElement("option");
@@ -2437,6 +2565,7 @@ function setupWorkoutTracking(){
   });
 
   el.showProgressButton.addEventListener("click",renderProgressHistory);
+  el.viewJamesProgressButton?.addEventListener("click",toggleJamesProgressView);
 }
 
 function populateTrackingExercises(){
@@ -2469,7 +2598,7 @@ function populateTrackingExercises(){
 }
 
 function getAllTrackableExercises(){
-  return getManagerExerciseLibrary().map(exercise=>{
+  return getTrackingExerciseLibrary().map(exercise=>{
     const aliases=[exercise.id,...(CENTRAL_TRACKING_ALIASES[exercise.id]||[])];
     const prescription=findCentralExercisePrescription(exercise.id,aliases);
 
@@ -2523,11 +2652,11 @@ function getTrackingExercise(exerciseId){
 
 function getLogsForTrackingExercise(exercise){
   if(!exercise) return [];
-  if(exercise.id==="cycling") return getCyclingLogs();
+  if(exercise.id==="cycling") return getTrackingCyclingLogs();
 
   const logs=[];
   (exercise.storageIds||[exercise.id]).forEach(storageId=>{
-    getSetLogs(storageId).forEach(log=>{
+    getTrackingSetLogs(storageId).forEach(log=>{
       const inferred=CENTRAL_TRACKING_VARIANT_NAMES[storageId]||null;
       logs.push({
         ...log,
@@ -4247,7 +4376,7 @@ function setupLogDetailSheet(){
   });
 
   el.deleteLogDetailButton?.addEventListener("click",()=>{
-    if(!activeLogDetail) return;
+    if(!activeLogDetail || isPublicTrackingView()) return;
 
     const entry=activeLogDetail.entry;
     const label=activeLogDetail.kind==="cycling"
@@ -4344,6 +4473,10 @@ function openLogDetailSheet(entry,context={}){
     row.append(key,val);
     el.logDetailContent.appendChild(row);
   });
+
+  if(el.deleteLogDetailButton){
+    el.deleteLogDetailButton.hidden=isPublicTrackingView();
+  }
 
   el.logDetailBackdrop.hidden=false;
   el.logDetailSheet.hidden=false;
@@ -4531,7 +4664,7 @@ function dateLinearScaleOptions(){
 
 function renderCyclingProgress(){
   destroyTrackingCharts();
-  const allLogs=getCyclingLogs().slice().sort((a,b)=>{
+  const allLogs=getTrackingCyclingLogs().slice().sort((a,b)=>{
     const dateDifference=dateSortValue(a.date)-dateSortValue(b.date);
     return dateDifference!==0 ? dateDifference : (a.timestamp||0)-(b.timestamp||0);
   });
@@ -4640,7 +4773,8 @@ function renderCyclingLogList(logs){
       }
     );
 
-    item.append(datePart,details,remove);
+    item.append(datePart,details);
+    if(!isPublicTrackingView()) item.appendChild(remove);
     list.appendChild(item);
   });
 
@@ -4675,7 +4809,7 @@ function renderProgressHistory(){
     // Dragon Flag levels historically use their level IDs as storage keys.
     logs=[];
     exercise.levels.forEach(level=>{
-      getSetLogs(level.id).forEach(log=>{
+      getTrackingSetLogs(level.id).forEach(log=>{
         logs.push({
           ...log,
           _storageId:level.id,
@@ -5001,7 +5135,8 @@ function renderStrengthLogList(exercise,logs){
       }
     );
 
-    item.append(datePart,details,remove);
+    item.append(datePart,details);
+    if(!isPublicTrackingView()) item.appendChild(remove);
     list.appendChild(item);
   });
 
@@ -5421,27 +5556,33 @@ function showWorkoutError(message){
 }
 
 function normalizeWorkoutDate(value){
-  const match=String(value).trim().match(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(\d{4})$/);
-  if(!match) return null;
+  const raw=String(value||"").trim();
 
-  const month=Number(match[1]);
-  const day=Number(match[2]);
-  const year=Number(match[3]);
+  let month,day,year;
+
+  const native=raw.match(/^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/);
+  const legacy=raw.match(/^(0[1-9]|1[0-2])\/(0[1-9]|[12]\d|3[01])\/(\d{4})$/);
+
+  if(native){
+    year=Number(native[1]);
+    month=Number(native[2]);
+    day=Number(native[3]);
+  }else if(legacy){
+    month=Number(legacy[1]);
+    day=Number(legacy[2]);
+    year=Number(legacy[3]);
+  }else{
+    return null;
+  }
+
   const date=new Date(year,month-1,day);
-
   if(date.getFullYear()!==year||date.getMonth()!==month-1||date.getDate()!==day) return null;
-  return `${match[1]}/${match[2]}/${match[3]}`;
+
+  return `${String(month).padStart(2,"0")}/${String(day).padStart(2,"0")}/${year}`;
 }
 
 function formatDateForInput(date){
-  return `${String(date.getMonth()+1).padStart(2,"0")}/${String(date.getDate()).padStart(2,"0")}/${date.getFullYear()}`;
-}
-
-function formatDateTyping(input){
-  let digits=input.value.replace(/\D/g,"").slice(0,8);
-  if(digits.length>4) digits=digits.slice(0,2)+"/"+digits.slice(2,4)+"/"+digits.slice(4);
-  else if(digits.length>2) digits=digits.slice(0,2)+"/"+digits.slice(2);
-  input.value=digits;
+  return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
 }
 
 function dateSortValue(date){

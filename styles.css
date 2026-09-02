@@ -1486,3 +1486,41 @@ input,select{
   .treadmill-form .primary-button{grid-column:1/-1}
   .pr-compare-card{grid-template-columns:1fr}
 }
+
+/* ---------- v26.5 native calendars + public admin progress ---------- */
+.public-progress-switcher{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin:8px 0 12px;
+}
+.public-progress-button{
+  min-width:220px;
+}
+.public-progress-banner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex:1;
+  padding:10px 12px;
+  border-radius:13px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:.78rem;
+  font-weight:700;
+}
+.public-progress-banner span:last-child{
+  color:var(--muted);
+  font-weight:600;
+}
+input[type="date"],
+input[type="month"]{
+  cursor:pointer;
+}
+@media(max-width:600px){
+  .public-progress-switcher{flex-direction:column;align-items:stretch}
+  .public-progress-button{width:100%;min-width:0}
+  .public-progress-banner{width:100%}
+}

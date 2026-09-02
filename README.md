@@ -1,96 +1,89 @@
-# Jim Gym Fitness Progress — v26.4
+# Jim Gym Fitness Progress — v26.5
 
-v26.4 adds exercise-library management, better phone-friendly time entry, treadmill logging, and personal records.
+v26.5 adds native calendar/date selection and a read-only public view of James's workout progress.
 
-## New features
+## Native calendar UI
 
-### Exercise library management
-Settings now contains **Manage Workouts**.
+Workout Logging now uses the browser/iPhone native date picker instead of requiring MM/DD/YYYY typing.
 
-Normal users can:
-- Edit their custom exercises
-- Change name and muscle group
-- Toggle loading, duration, Left/Right logging, and assistance
-- Edit variations
-- Delete custom exercises
+- Workout date: native calendar
+- Cycling commute date: already uses the native date picker
+- Workout Tracking specific-month selection: continues using the native month picker
 
-Historical logs are preserved when a custom exercise is deleted.
+Stored workout dates remain MM/DD/YYYY internally for compatibility with all existing logs.
 
-Administrators can additionally edit the shared built-in exercise definitions. Built-in edits are stored in Firestore under:
+## "See how James is doing"
 
-    sharedExerciseOverrides/<exercise-id>
+Workout Tracking now includes:
 
-and are loaded by all signed-in users.
+    See how James is doing
 
-Admins can also reset an edited built-in exercise to the app default.
+Any signed-in user can open a read-only copy of the administrator's workout-tracking data.
 
-### Lateral raises
-The built-in Lateral Raises exercise now logs Left and Right separately.
+In this view users can:
+- Browse James's muscle groups and exercises
+- View strength charts
+- View cycling charts
+- View PRs
+- Change tracking time ranges
+- Zoom/pan charts
+- Tap points for log details
 
-For existing lateral-raise logs that do not contain a side, v26.4 automatically migrates each workout date using:
+They cannot:
+- Delete James's logs
+- Edit James's logs
+- Modify James's exercises through the public tracking view
 
-    Set 1 = Left
-    Set 2 = Right
-    Set 3 = Left
-    Set 4 = Right
-    ...
+Tap:
 
-The same migration is applied if a previously non-sided exercise is changed to Left/Right in the exercise editor.
+    Back to my progress
 
-### Treadmill
-Treadmill logging now includes:
-- Minutes
-- Seconds
-- Incline percentage
+to return to the signed-in user's own tracking data.
 
-Stored treadmill durations display as MM:SS.
+## Privacy model
 
-### Cycling time on iPhone
-Cycling commute time now uses separate **Minutes** and **Seconds** number fields, so the iPhone numeric keypad works without requiring a colon key.
+v26.5 does NOT expose the administrator's full private Firestore account tree.
 
-The saved/logged value is still stored as MM:SS.
+Instead, when an admin opens the app, the app publishes only tracking-related keys into:
 
-### Personal records
-Strength exercises now calculate a PR.
+    publicProgress/<admin UID>/appData/
 
-Weighted exercise:
+Published keys are limited to:
+- workoutSetLogs:*
+- cyclingActivityLogs
+- fitnessTrackerCustomExercises
 
-    PR score = loading × reps
+Normal users can read this public-progress collection, but cannot write to it.
 
-Assisted/bodyweight exercise:
+The admin's private settings, account data, and other Firestore records remain protected by the existing per-user rules.
 
-    PR score = (body weight - assistance weight) × reps
+## REQUIRED: publish Firestore rules
 
-A negative assistance value represents added weight, so:
+Firebase Console:
 
-    body weight - (-added weight)
+    Firestore Database > Rules
 
-correctly increases effective resistance.
+Replace the current rules with the included v26.5 `firestore.rules` and click Publish.
 
-Timed exercises:
+The new rules add read-only access for signed-in users to `publicProgress`.
 
-    PR = maximum duration
+Only the authenticated administrator can write their own public-progress data.
 
-Workout Logging displays:
-- Personal record
-- Most recent set from the most recent previous workout date
+## First publication
 
-Workout Tracking also displays the exercise PR.
+After deploying v26.5:
 
-### Firestore rules
-v26.4 adds a shared exercise override collection.
+1. Sign into the admin/James account while online.
+2. Leave the app open until cloud sync reports ready.
+3. The app will publish the existing tracking snapshot.
+4. Other users can then use "See how James is doing."
 
-You MUST publish the included `firestore.rules` before administrators can edit built-in exercises.
+Existing and future workout logs are mirrored automatically after that.
 
-The rules allow:
-- All signed-in users to read shared built-in exercise overrides
-- Only admins to create/update/delete them
-- Existing per-user privacy rules remain in place
+## GitHub Pages
 
-## Deployment
+This package keeps the flat GitHub repository structure used by the existing deployment.
 
-This is the **flat GitHub Pages build**. Upload every file directly into the repository root, matching the structure used by your current `jim-gym` repository.
+Upload all files directly into the repository root.
 
-After deployment, the v26.4 service-worker cache name is new, so installed iPhones should pick up the update. If an iPhone still shows the previous version, fully close the Home Screen app and reopen it while online.
-
-For desktop debugging, a hard refresh or service-worker unregister may be useful.
+The service-worker version is bumped to v26.5.0 so installed iPhones receive the update.

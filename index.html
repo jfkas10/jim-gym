@@ -296,8 +296,8 @@
       </label>
 
       <label class="field">
-        <span class="label-row"><span class="label">Workout date <span class="req">*</span></span><span class="unit">MM/DD/YYYY</span></span>
-        <input id="strengthWorkoutDate" type="text" inputmode="numeric" placeholder="08/24/2026" maxlength="10" autocomplete="off" disabled>
+        <span class="label-row"><span class="label">Workout date <span class="req">*</span></span><span class="unit">calendar</span></span>
+        <input id="strengthWorkoutDate" type="date" disabled>
       </label>
 
       <label class="field">
@@ -431,6 +431,14 @@
       <div class="row"><h2>Workout Tracking</h2><span class="badge">Progress history</span></div>
       <p class="sub">Select any exercise in the 5-day split to review every logged set in chronological order.</p>
     </div>
+    <section class="public-progress-switcher">
+      <button id="viewJamesProgressButton" class="secondary-button public-progress-button" type="button">See how James is doing</button>
+      <div id="publicProgressBanner" class="public-progress-banner" hidden>
+        <span><strong id="publicProgressName">James</strong>'s workout progress</span>
+        <span>Read-only view</span>
+      </div>
+    </section>
+
     <section class="tracking-dashboard" aria-label="Current month summary">
       <div class="tracking-dashboard-heading">
         <div>

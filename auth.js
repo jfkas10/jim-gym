@@ -114,13 +114,25 @@ async function showAuthenticatedApp(user){
     window.setBuiltInExerciseOverrides?.(sharedOverrides);
     window.saveBuiltInExerciseOverride=saveSharedExerciseOverride;
     window.deleteBuiltInExerciseOverride=deleteSharedExerciseOverride;
+    window.loadPublishedAdminProgress=loadPublishedAdminProgress;
+
+    const profile=await getUserProfile(user.uid);
+    const isAdmin=profile?.role==="admin";
+    window.currentUserIsAdmin=isAdmin;
 
     // The pre-account migration happens before first cloud synchronization.
     maybeMigrateLegacyData(user);
 
-    window.setAppStorageCloudAdapter(createCloudStorageAdapter(user.uid));
+    window.setAppStorageCloudAdapter(createCloudStorageAdapter(user.uid,{
+      publishPublic:isAdmin,
+      displayName:user.displayName || "James"
+    }));
 
     const result=await synchronizeUserStorage(user.uid);
+
+    if(isAdmin){
+      await publishAdminProgressSnapshot(user.uid,user.displayName || "James");
+    }
     console.info("Cloud synchronization:",result);
     window.dispatchEvent(new CustomEvent("fitness-cloud-sync",{
       detail:{

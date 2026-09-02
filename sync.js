@@ -52,7 +52,36 @@ export async function getUserProfile(uid){
   return snapshot.exists() ? snapshot.data() : null;
 }
 
-export function createCloudStorageAdapter(uid){
+function publicProgressRef(uid){
+  return doc(db,"publicProgress",uid);
+}
+
+function publicProgressCollection(uid){
+  return collection(db,"publicProgress",uid,"appData");
+}
+
+function publicProgressDoc(uid,key){
+  return doc(db,"publicProgress",uid,"appData",encodeURIComponent(key));
+}
+
+function isPublicTrackingKey(key){
+  return key==="cyclingActivityLogs" ||
+    key==="fitnessTrackerCustomExercises" ||
+    key.startsWith("workoutSetLogs:");
+}
+
+async function ensurePublicProgressProfile(uid,displayName){
+  await setDoc(publicProgressRef(uid),{
+    displayName:displayName || "James",
+    visibility:"workout-progress",
+    updatedAt:serverTimestamp()
+  },{merge:true});
+}
+
+export function createCloudStorageAdapter(uid,options={}){
+  const publishPublic=Boolean(options.publishPublic);
+  const displayName=options.displayName || "James";
+
   return {
     async setItem(key,value){
       await setDoc(appDataDoc(uid,key),{
@@ -60,14 +89,31 @@ export function createCloudStorageAdapter(uid){
         value:String(value),
         updatedAt:serverTimestamp()
       });
+
+      if(publishPublic && isPublicTrackingKey(key)){
+        await ensurePublicProgressProfile(uid,displayName);
+        await setDoc(publicProgressDoc(uid,key),{
+          key,
+          value:String(value),
+          updatedAt:serverTimestamp()
+        });
+      }
     },
 
     async removeItem(key){
       await deleteDoc(appDataDoc(uid,key));
+
+      if(publishPublic && isPublicTrackingKey(key)){
+        await deleteDoc(publicProgressDoc(uid,key));
+      }
     },
 
     async clear(){
       await deleteAllDocuments(appDataCollection(uid));
+
+      if(publishPublic){
+        await deleteAllDocuments(publicProgressCollection(uid));
+      }
     }
   };
 }
@@ -156,4 +202,56 @@ export async function saveSharedExerciseOverride(exerciseId,definition){
 
 export async function deleteSharedExerciseOverride(exerciseId){
   await deleteDoc(doc(db,"sharedExerciseOverrides",exerciseId));
+}
+
+
+export async function publishAdminProgressSnapshot(uid,displayName){
+  await ensurePublicProgressProfile(uid,displayName);
+
+  const entries=Object.entries(window.exportAppStorageEntries?.() || {})
+    .filter(([key])=>isPublicTrackingKey(key));
+
+  await deleteAllDocuments(publicProgressCollection(uid));
+
+  for(let start=0;start<entries.length;start+=400){
+    const batch=writeBatch(db);
+    entries.slice(start,start+400).forEach(([key,value])=>{
+      batch.set(publicProgressDoc(uid,key),{
+        key,
+        value:String(value),
+        updatedAt:serverTimestamp()
+      });
+    });
+    await batch.commit();
+  }
+
+  await ensurePublicProgressProfile(uid,displayName);
+  return entries.length;
+}
+
+export async function loadPublishedAdminProgress(){
+  const profiles=await getDocs(collection(db,"publicProgress"));
+  if(profiles.empty) return null;
+
+  // This app currently has a single admin. Prefer a profile named James when present.
+  const docs=profiles.docs;
+  const chosen=docs.find(snapshot=>
+    String(snapshot.data()?.displayName||"").trim().toLowerCase()==="james"
+  ) || docs[0];
+
+  const snapshot=await getDocs(publicProgressCollection(chosen.id));
+  const data={};
+
+  snapshot.forEach(document=>{
+    const item=document.data();
+    if(typeof item.key==="string" && typeof item.value==="string"){
+      data[item.key]=item.value;
+    }
+  });
+
+  return {
+    uid:chosen.id,
+    displayName:chosen.data()?.displayName || "James",
+    data
+  };
 }
