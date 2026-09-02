@@ -1,89 +1,46 @@
-# Jim Gym Fitness Progress — v26.5
+# Jim Gym Fitness Progress — v26.5.3
 
-v26.5 adds native calendar/date selection and a read-only public view of James's workout progress.
+This build fixes the v26.5/v26.5.2 startup failure caused by a missing JavaScript import.
 
-## Native calendar UI
+## Root cause
 
-Workout Logging now uses the browser/iPhone native date picker instead of requiring MM/DD/YYYY typing.
+`auth.js` called:
 
-- Workout date: native calendar
-- Cycling commute date: already uses the native date picker
-- Workout Tracking specific-month selection: continues using the native month picker
+    loadPublishedAdminProgress
 
-Stored workout dates remain MM/DD/YYYY internally for compatibility with all existing logs.
+and:
 
-## "See how James is doing"
+    publishAdminProgressSnapshot
 
-Workout Tracking now includes:
+but those functions were not imported from `sync.js`.
 
-    See how James is doing
+That caused:
 
-Any signed-in user can open a read-only copy of the administrator's workout-tracking data.
+    ReferenceError: loadPublishedAdminProgress is not defined
 
-In this view users can:
-- Browse James's muscle groups and exercises
-- View strength charts
-- View cycling charts
-- View PRs
-- Change tracking time ranges
-- Zoom/pan charts
-- Tap points for log details
+during authenticated startup. Because the exception occurred inside `showAuthenticatedApp()`, the app displayed the generic cloud-data error even though Firebase Authentication and the Firestore rules were not necessarily the problem.
 
-They cannot:
-- Delete James's logs
-- Edit James's logs
-- Modify James's exercises through the public tracking view
+## Fix
 
-Tap:
+v26.5.3 imports all shared/public progress functions explicitly from `sync.js`.
 
-    Back to my progress
+The v26.5.2 defensive behavior is retained:
+- private login/cloud sync can succeed even if optional public-progress publishing fails
+- public James-progress publishing reports its own error
+- normal users remain isolated to their own Firestore data
 
-to return to the signed-in user's own tracking data.
+## Firebase rules
 
-## Privacy model
+Use the included `firestore.rules`. They are unchanged in principle from the hardened v26.5.2 rules.
 
-v26.5 does NOT expose the administrator's full private Firestore account tree.
+Publish them at:
 
-Instead, when an admin opens the app, the app publishes only tracking-related keys into:
+    Firebase Console > Firestore Database > Rules
 
-    publicProgress/<admin UID>/appData/
+## Deploy
 
-Published keys are limited to:
-- workoutSetLogs:*
-- cyclingActivityLogs
-- fitnessTrackerCustomExercises
+Upload all files directly to the flat GitHub Pages repository root.
 
-Normal users can read this public-progress collection, but cannot write to it.
+The splash screen and service worker both identify this build as:
 
-The admin's private settings, account data, and other Firestore records remain protected by the existing per-user rules.
-
-## REQUIRED: publish Firestore rules
-
-Firebase Console:
-
-    Firestore Database > Rules
-
-Replace the current rules with the included v26.5 `firestore.rules` and click Publish.
-
-The new rules add read-only access for signed-in users to `publicProgress`.
-
-Only the authenticated administrator can write their own public-progress data.
-
-## First publication
-
-After deploying v26.5:
-
-1. Sign into the admin/James account while online.
-2. Leave the app open until cloud sync reports ready.
-3. The app will publish the existing tracking snapshot.
-4. Other users can then use "See how James is doing."
-
-Existing and future workout logs are mirrored automatically after that.
-
-## GitHub Pages
-
-This package keeps the flat GitHub repository structure used by the existing deployment.
-
-Upload all files directly into the repository root.
-
-The service-worker version is bumped to v26.5.0 so installed iPhones receive the update.
+    v26.5.3

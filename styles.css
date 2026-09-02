@@ -1524,3 +1524,64 @@ input[type="month"]{
   .public-progress-button{width:100%;min-width:0}
   .public-progress-banner{width:100%}
 }
+
+
+/* ---------- v26.5.1 iOS calendar display fix ---------- */
+.auth-brand-meta{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:3px;
+}
+.app-version-badge{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:3px 7px;
+  border-radius:999px;
+  background:var(--accent-soft);
+  color:var(--accent);
+  font-size:.68rem;
+  font-weight:800;
+  letter-spacing:.02em;
+}
+.field,
+.select-field{
+  min-width:0;
+}
+input[type="date"],
+input[type="month"]{
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+  height:48px;
+  min-height:48px;
+  padding:10px 12px;
+  font-size:16px;
+  line-height:1.2;
+  text-align:left;
+  color:var(--text);
+  background:var(--field-bg);
+  -webkit-appearance:auto;
+  appearance:auto;
+}
+input[type="date"]::-webkit-date-and-time-value,
+input[type="month"]::-webkit-date-and-time-value{
+  min-height:1.2em;
+  text-align:left;
+  color:var(--text);
+}
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator{
+  opacity:1;
+}
+@supports (-webkit-touch-callout:none){
+  input[type="date"],
+  input[type="month"]{
+    overflow:hidden;
+    white-space:nowrap;
+  }
+}
