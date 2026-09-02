@@ -1,4 +1,5 @@
-# Jim Gym Fitness Progress — v26.5
+# Jim Gym Fitness Progress — v26.5.1
+
 
 v26.5 adds native calendar/date selection and a read-only public view of James's workout progress.
 
@@ -87,3 +88,12 @@ This package keeps the flat GitHub repository structure used by the existing dep
 Upload all files directly into the repository root.
 
 The service-worker version is bumped to v26.5.0 so installed iPhones receive the update.
+
+
+## v26.5.1 bugfix
+
+- Fixed iPhone/Safari native date and month fields overflowing their cards or rendering blank.
+- Native calendar/month pickers remain enabled.
+- Date/month inputs are now explicitly constrained to their parent width and use iOS-safe sizing.
+- The authentication/splash screen now shows the exact app version (`v26.5.1`).
+- Service-worker cache version was bumped to `v26.5.1` so installed Home Screen apps can verify the update.
