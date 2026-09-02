@@ -1,50 +1,89 @@
-# Jim Gym Fitness Progress — v26.5.2
+# Jim Gym Fitness Progress — v26.5
 
-This is a compatibility rebuild of v26.5.1.
+v26.5 adds native calendar/date selection and a read-only public view of James's workout progress.
 
-## What changed
+## Native calendar UI
 
-The public "See how James is doing" feature is now isolated from the core login/cloud-sync path.
+Workout Logging now uses the browser/iPhone native date picker instead of requiring MM/DD/YYYY typing.
 
-If the `publicProgress` Firestore rules are missing or misconfigured:
-- normal account login still works
-- private workout data still syncs
-- the admin can still open and use the app
-- only the optional public-progress feature reports an error
+- Workout date: native calendar
+- Cycling commute date: already uses the native date picker
+- Workout Tracking specific-month selection: continues using the native month picker
 
-The Firestore rules were also rewritten more defensively:
-- admin lookup first checks that the admin profile exists
-- `get` / `list` permissions are explicit
-- normal users remain isolated to their own `users/<uid>` data
-- admins retain read-only access to other users
-- shared built-in exercise overrides remain admin-write / signed-in-read
-- `publicProgress` remains signed-in-read / matching-admin-write
+Stored workout dates remain MM/DD/YYYY internally for compatibility with all existing logs.
 
-## REQUIRED Firebase step
+## "See how James is doing"
 
-In Firebase Console:
+Workout Tracking now includes:
 
-1. Open **Firestore Database**
-2. Open **Rules**
-3. Replace the entire rules file with `firestore.rules` from this package
-4. Click **Publish**
+    See how James is doing
 
-Then deploy the rest of this package to GitHub Pages.
+Any signed-in user can open a read-only copy of the administrator's workout-tracking data.
 
-## Verify the deployed version
+In this view users can:
+- Browse James's muscle groups and exercises
+- View strength charts
+- View cycling charts
+- View PRs
+- Change tracking time ranges
+- Zoom/pan charts
+- Tap points for log details
 
-The login/splash screen should show:
+They cannot:
+- Delete James's logs
+- Edit James's logs
+- Modify James's exercises through the public tracking view
 
-    v26.5.2
+Tap:
 
-The service worker cache is also versioned as `v26.5.2`.
+    Back to my progress
 
-If an installed iPhone still shows an older version:
-1. Open the GitHub Pages URL once in Safari while online.
-2. Close the Home Screen app completely.
-3. Reopen it.
-4. If necessary, remove and re-add the Home Screen app after Safari has loaded the new site once.
+to return to the signed-in user's own tracking data.
 
-## GitHub layout
+## Privacy model
 
-This remains the flat build: upload every file directly to the repository root.
+v26.5 does NOT expose the administrator's full private Firestore account tree.
+
+Instead, when an admin opens the app, the app publishes only tracking-related keys into:
+
+    publicProgress/<admin UID>/appData/
+
+Published keys are limited to:
+- workoutSetLogs:*
+- cyclingActivityLogs
+- fitnessTrackerCustomExercises
+
+Normal users can read this public-progress collection, but cannot write to it.
+
+The admin's private settings, account data, and other Firestore records remain protected by the existing per-user rules.
+
+## REQUIRED: publish Firestore rules
+
+Firebase Console:
+
+    Firestore Database > Rules
+
+Replace the current rules with the included v26.5 `firestore.rules` and click Publish.
+
+The new rules add read-only access for signed-in users to `publicProgress`.
+
+Only the authenticated administrator can write their own public-progress data.
+
+## First publication
+
+After deploying v26.5:
+
+1. Sign into the admin/James account while online.
+2. Leave the app open until cloud sync reports ready.
+3. The app will publish the existing tracking snapshot.
+4. Other users can then use "See how James is doing."
+
+Existing and future workout logs are mirrored automatically after that.
+
+## GitHub Pages
+
+This package keeps the flat GitHub repository structure used by the existing deployment.
+
+Upload all files directly into the repository root.
+
+The service-worker version is bumped to v26.5.0 so installed iPhones receive the update.

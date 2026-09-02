@@ -110,13 +110,7 @@ async function showAuthenticatedApp(user){
   try{
     await ensureUserProfile(user);
 
-    let sharedOverrides={};
-    try{
-      sharedOverrides=await loadSharedExerciseOverrides();
-    }catch(error){
-      console.warn("Shared exercise overrides could not be loaded:",error);
-    }
-
+    const sharedOverrides=await loadSharedExerciseOverrides();
     window.setBuiltInExerciseOverrides?.(sharedOverrides);
     window.saveBuiltInExerciseOverride=saveSharedExerciseOverride;
     window.deleteBuiltInExerciseOverride=deleteSharedExerciseOverride;
@@ -137,19 +131,7 @@ async function showAuthenticatedApp(user){
     const result=await synchronizeUserStorage(user.uid);
 
     if(isAdmin){
-      try{
-        await publishAdminProgressSnapshot(user.uid,user.displayName || "James");
-      }catch(error){
-        // Public progress is optional. A rules/configuration problem here must
-        // never prevent the administrator from opening their own app.
-        console.warn("Public progress could not be published:",error);
-        window.dispatchEvent(new CustomEvent("fitness-cloud-sync",{
-          detail:{
-            state:"error",
-            message:"Private sync ready · James public progress needs Firebase rules"
-          }
-        }));
-      }
+      await publishAdminProgressSnapshot(user.uid,user.displayName || "James");
     }
     console.info("Cloud synchronization:",result);
     window.dispatchEvent(new CustomEvent("fitness-cloud-sync",{
