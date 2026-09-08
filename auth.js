@@ -21,7 +21,12 @@ import {
   saveSharedExerciseOverride,
   deleteSharedExerciseOverride,
   publishAdminProgressSnapshot,
-  loadPublishedAdminProgress
+  loadPublishedAdminProgress,
+  replaceUserCloudStorage,
+  loadGlobalFitnessConfig,
+  saveGlobalEquipmentList,
+  saveGlobalGym,
+  deleteGlobalGym
 } from "./sync.js";
 import { configureAdminAccess } from "./admin.js";
 
@@ -125,6 +130,16 @@ async function showAuthenticatedApp(user){
     window.saveBuiltInExerciseOverride=saveSharedExerciseOverride;
     window.deleteBuiltInExerciseOverride=deleteSharedExerciseOverride;
     window.loadPublishedAdminProgress=loadPublishedAdminProgress;
+    window.saveGlobalEquipmentList=saveGlobalEquipmentList;
+    window.saveGlobalGym=saveGlobalGym;
+    window.deleteGlobalGym=deleteGlobalGym;
+
+    try{
+      window.globalFitnessConfig=await loadGlobalFitnessConfig();
+    }catch(error){
+      console.warn("Global gym data could not be loaded:",error);
+      window.globalFitnessConfig={equipment:null,gyms:[]};
+    }
 
     const profile=await getUserProfile(user.uid);
     const isAdmin=profile?.role==="admin";
@@ -183,6 +198,31 @@ async function showAuthenticatedApp(user){
   }
 }
 
+function showGuestApp(){
+  window.setAppGuestMode?.();
+  window.currentUserIsAdmin=false;
+  window.globalFitnessConfig={equipment:null,gyms:[]};
+
+  const display=$("currentUserDisplayName");
+  const email=$("currentUserEmail");
+  const role=$("currentUserRole");
+  const syncStatus=$("cloudSyncStatus");
+  const deleteButton=$("deleteAccountButton");
+
+  if(display) display.textContent="Guest";
+  if(email) email.textContent="Temporary session";
+  if(role) role.textContent="Guest account";
+  if(syncStatus) syncStatus.textContent="Not saved · clears when session ends";
+  if(deleteButton) deleteButton.hidden=true;
+
+  $("authGate").hidden=true;
+  $("appShell").hidden=false;
+
+  if(typeof window.initializeFitnessApp==="function"){
+    window.initializeFitnessApp();
+  }
+}
+
 function showSignedOut(){
   window.setAppStorageUser(null);
   $("appShell").hidden=true;
@@ -196,6 +236,10 @@ export async function startAuthentication(){
 
   $("signInModeButton").addEventListener("click",()=>showMode("signin"));
   $("registerModeButton").addEventListener("click",()=>showMode("register"));
+  $("guestModeButton")?.addEventListener("click",()=>{
+    if(!window.confirm("Continue as Guest? Workout data will only exist for this session and will be erased when you leave or sign out.")) return;
+    showGuestApp();
+  });
 
   $("signInForm").addEventListener("submit",async event=>{
     event.preventDefault();
@@ -265,6 +309,13 @@ export async function startAuthentication(){
   });
 
   $("logoutButton").addEventListener("click",async()=>{
+    if(window.isAppGuest?.()){
+      if(!window.confirm("End this guest session? All guest workout data will be erased.")) return;
+      window.appStorage.clear();
+      location.reload();
+      return;
+    }
+
     if(!window.confirm("Sign out of this account?")) return;
     await signOut(auth);
     location.reload();
@@ -309,6 +360,11 @@ export async function startAuthentication(){
   });
 
   window.clearCurrentUserFitnessData=async function(){
+    if(window.isAppGuest?.()){
+      window.appStorage.clear();
+      return;
+    }
+
     const user=auth.currentUser;
     if(!user) throw new Error("No signed-in user.");
 
@@ -320,6 +376,18 @@ export async function startAuthentication(){
     const user=auth.currentUser;
     if(!user) throw new Error("No signed-in user.");
     return uploadCurrentLocalStorage(user.uid);
+  };
+
+  window.restoreCurrentUserBackup=async function(entries){
+    if(window.isAppGuest?.()){
+      window.replaceAppStorageEntriesLocal?.(entries||{});
+      return;
+    }
+
+    const user=auth.currentUser;
+    if(!user) throw new Error("No signed-in user.");
+    window.replaceAppStorageEntriesLocal?.(entries||{});
+    await replaceUserCloudStorage(user.uid,entries||{});
   };
 
   onAuthStateChanged(auth,user=>{

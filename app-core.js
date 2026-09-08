@@ -19,7 +19,7 @@ const outputIds=[
 ];
 
 const tabIds=["splitManager","workoutLogging","workoutTracking","admin","settings"];
-const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage","viewJamesProgressButton","publicProgressBanner","publicProgressName"];
+const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage","viewJamesProgressButton","publicProgressBanner","publicProgressName","exportSplitsTxtButton","exportWorkoutBackupButton","importWorkoutBackupButton","importWorkoutBackupFile","backupStatus","gymCompatibilityCard","loggingGymSelector","loggingGymEquipment","newGymButton","savedGymList","gymEditor","gymEditorTitle","closeGymEditorButton","gymNameInput","customEquipmentInput","addCustomEquipmentButton","gymEquipmentChecklist","saveAsGlobalGymWrap","saveAsGlobalGym","saveGymButton","gymEditorMessage","globalEquipmentAdmin","globalEquipmentTextarea","saveGlobalEquipmentButton","globalEquipmentMessage"];
 const el=Object.fromEntries(
   [...inputIds,...outputIds,"validationMessage","advancedResults","showAdvancedResults",
    ...workoutElementIds,...tabIds.flatMap(name=>[name+"Tab",name+"Panel"])]
@@ -1034,6 +1034,7 @@ function setupSplitManager(){
   el.newSplitButton.addEventListener("click",startNewSplit);
   el.manageSplitsButton.addEventListener("click",showManagedSplits);
   el.exportAllSplitsButton.addEventListener("click",exportAllManagedSplits);
+  el.exportSplitsTxtButton.addEventListener("click",exportSplitsAsChatGPTText);
   el.importSplitsButton.addEventListener("click",()=>el.importSplitsFile.click());
   el.importSplitsFile.addEventListener("change",handleSplitImportFile);
 
@@ -1251,6 +1252,55 @@ function exportAllManagedSplits(){
     `fitness-progress-tracker-splits-${managerDateStamp()}.json`
   );
   setSplitManagerStatus(`Exported ${splits.length} split${splits.length===1?"":"s"}.`);
+}
+
+function exportSplitsAsChatGPTText(){
+  const splits=getEffectiveManagedSplits();
+  const text=splits.map(split=>splitToChatGPTText(split)).join("\n\n---\n\n");
+  downloadTextFile(text,`fitness-workout-splits-${managerDateStamp()}.txt`);
+  setSplitManagerStatus(`Exported ${splits.length} split${splits.length===1?"":"s"} as ChatGPT-friendly text.`);
+}
+
+function splitToChatGPTText(split){
+  const lines=[
+    `# ${split.name}`,
+    "",
+    "| Day | Section | Exercise | Prescription | Variations / Notes |",
+    "|---|---|---|---|---|"
+  ];
+
+  (split.days||[]).forEach((day,index)=>{
+    const dayName=`Day ${index+1} — ${day.name||`Day ${index+1}`}`;
+
+    (day.warmups||[]).forEach(warmup=>{
+      lines.push(`| ${escapeTable(dayName)} | Warm-Up | ${escapeTable(warmup.name||"")} | ${escapeTable(warmup.display||warmup.custom||"")} | |`);
+    });
+
+    (day.workouts||[]).forEach(workout=>{
+      const variations=Array.isArray(workout.variants)&&workout.variants.length
+        ? workout.variants.join(", ")
+        : "";
+      lines.push(`| ${escapeTable(dayName)} | Workout | ${escapeTable(workout.name||"")} | ${escapeTable(workout.display||managerWorkoutPrescription(workout))} | ${escapeTable(variations)} |`);
+    });
+  });
+
+  return lines.join("\n");
+}
+
+function escapeTable(value){
+  return String(value??"").replace(/\|/g,"\\|").replace(/\r?\n/g," ");
+}
+
+function downloadTextFile(text,filename){
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement("a");
+  anchor.href=url;
+  anchor.download=filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 
 function exportManagedSplit(id,kind){
@@ -1519,13 +1569,35 @@ function renderManagedSplitList(){
     exportButton.textContent="Export";
     exportButton.addEventListener("click",()=>exportManagedSplit(entry.id,entry.kind));
 
+    const txtButton=document.createElement("button");
+    txtButton.type="button";
+    txtButton.className="secondary-button";
+    txtButton.textContent="TXT";
+    txtButton.addEventListener("click",()=>{
+      let split=null;
+      if(entry.kind==="builtIn"){
+        const override=getCustomSplits().find(item=>item.id===entry.id);
+        const builtIn=WORKOUT_SPLITS.find(item=>item.id===entry.id);
+        split=override || (builtIn ? convertBuiltInSplitToManagerDraft(builtIn) : null);
+      }else{
+        split=getCustomSplits().find(item=>item.id===entry.id)||null;
+      }
+
+      if(!split) return;
+      downloadTextFile(
+        splitToChatGPTText(split),
+        `${slugifyManagerName(split.name)||"workout-split"}-${managerDateStamp()}.txt`
+      );
+      setSplitManagerStatus(`Exported "${split.name}" as ChatGPT-friendly text.`);
+    });
+
     const edit=document.createElement("button");
     edit.type="button";
     edit.className="secondary-button";
     edit.textContent="Edit";
     edit.addEventListener("click",()=>editManagedSplit(entry.id,entry.kind));
 
-    item.append(info,exportButton,edit);
+    item.append(info,exportButton,txtButton,edit);
 
     if(entry.kind==="custom"){
       const remove=document.createElement("button");
@@ -2329,6 +2401,7 @@ function populateWorkoutDaysForSelectedSplit(){
 
 function clearRenderedWorkout(){
   el.selectedDayDescription.hidden=true;
+  if(el.gymCompatibilityCard) el.gymCompatibilityCard.hidden=true;
   el.inlineCyclingContainer.hidden=true;
   el.warmupContainer.hidden=true;
   el.workingSetsContainer.hidden=true;
@@ -2397,6 +2470,71 @@ const CENTRAL_TRACKING_ALIASES={
   "copenhagen-plank":["copenhagen-plank"],
   "dragon-flag-progression":["dragon-flag-progression"]
 };
+
+function canonicalExerciseIdForStorageId(exerciseId){
+  if(!exerciseId) return exerciseId;
+
+  for(const [canonical,aliases] of Object.entries(CENTRAL_TRACKING_ALIASES)){
+    if(exerciseId===canonical || (aliases||[]).includes(exerciseId)){
+      return canonical;
+    }
+  }
+
+  return exerciseId;
+}
+
+function logIdentity(log){
+  if(log?.id) return `id:${log.id}`;
+  return [
+    log?.date||"",
+    log?.timestamp||"",
+    log?.performedExerciseId||"",
+    log?.variant||"",
+    log?.side||"",
+    log?.load??"",
+    log?.reps??"",
+    log?.durationSeconds??"",
+    log?.assistanceWeight??""
+  ].join("|");
+}
+
+function migrateLegacyWorkoutLogAliases(){
+  const markerKey="workoutLogSchemaMigration:v26.6";
+  let copied=0;
+
+  Object.entries(CENTRAL_TRACKING_ALIASES).forEach(([canonical,aliases])=>{
+    const ids=[canonical,...(aliases||[])];
+    const merged=[];
+    const seen=new Set();
+
+    ids.forEach(id=>{
+      getSetLogs(id).forEach(log=>{
+        const identity=logIdentity(log);
+        if(seen.has(identity)) return;
+        seen.add(identity);
+        merged.push({
+          ...log,
+          performedExerciseId:canonical,
+          variant:log.variant || CENTRAL_TRACKING_VARIANT_NAMES?.[id] || null,
+          _migratedFrom:log.performedExerciseId && log.performedExerciseId!==canonical
+            ? log.performedExerciseId
+            : (id!==canonical ? id : log._migratedFrom||null)
+        });
+      });
+    });
+
+    const canonicalExisting=getSetLogs(canonical);
+    if(JSON.stringify(merged)!==JSON.stringify(canonicalExisting)){
+      saveSetLogs(canonical,merged);
+      copied+=Math.max(0,merged.length-canonicalExisting.length);
+    }
+  });
+
+  appStorage.setItem(markerKey,"done");
+  if(copied) console.info(`Copied ${copied} legacy workout logs into canonical exercise storage.`);
+}
+
+
 
 const CENTRAL_TRACKING_VARIANT_NAMES={
   "wide-grip-pull-up":"Wide Grip",
@@ -2655,12 +2793,18 @@ function getLogsForTrackingExercise(exercise){
   if(exercise.id==="cycling") return getTrackingCyclingLogs();
 
   const logs=[];
+  const seen=new Set();
+
   (exercise.storageIds||[exercise.id]).forEach(storageId=>{
     getTrackingSetLogs(storageId).forEach(log=>{
+      const identity=logIdentity(log);
+      if(seen.has(identity)) return;
+      seen.add(identity);
+
       const inferred=CENTRAL_TRACKING_VARIANT_NAMES[storageId]||null;
       logs.push({
         ...log,
-        _storageId:storageId,
+        _storageId:canonicalExerciseIdForStorageId(storageId),
         variant:log.variant||inferred||null
       });
     });
@@ -2708,6 +2852,8 @@ function renderSelectedWorkoutDay(){
 
   el.selectedDayDescription.textContent=`${split.name} · ${day.label}`;
   el.selectedDayDescription.hidden=false;
+  el.gymCompatibilityCard.hidden=false;
+  refreshLoggingGymSelector();
 
   const hasCycling=day.exercises.some(isCyclingLoggingExercise);
   el.inlineCyclingContainer.hidden=!hasCycling;
@@ -3225,7 +3371,9 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
   }
 
   function storageIdFor(resolved){
-    return exercise.trackingId||resolved.trackingId||resolved.id||exercise.id;
+    return canonicalExerciseIdForStorageId(
+      exercise.trackingId||resolved.trackingId||resolved.id||exercise.id
+    );
   }
 
   function refreshResolvedUI(){
@@ -3262,7 +3410,7 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
     const date=normalizeWorkoutDate(el.strengthWorkoutDate.value);
 
     if(!date){
-      showWorkoutError("Enter a valid workout date in MM/DD/YYYY format.");
+      showWorkoutError("Choose a valid workout date.");
       el.strengthWorkoutDate.focus();
       return;
     }
@@ -3411,7 +3559,7 @@ function buildSubexerciseBox(subexercise){
     message.textContent="";
     const date=normalizeWorkoutDate(el.strengthWorkoutDate.value);
     if(!date){
-      showWorkoutError("Enter a valid workout date in MM/DD/YYYY format.");
+      showWorkoutError("Choose a valid workout date.");
       return;
     }
 
@@ -3898,6 +4046,379 @@ function migrateKnownSideExerciseLogs(){
   getManagerExerciseLibrary()
     .filter(item=>item.side)
     .forEach(item=>migrateLegacySideLogsForExercise(item.id));
+}
+
+const BACKUP_SCHEMA_VERSION="26.6";
+const PERSONAL_GYMS_STORAGE_KEY="fitnessTrackerGyms";
+const CUSTOM_EQUIPMENT_STORAGE_KEY="fitnessTrackerCustomEquipment";
+
+const DEFAULT_GYM_EQUIPMENT=[
+  "squat rack","smith machine","barbell bench","assisted pull-up/dip machine","shoulder press",
+  "chest press","pec deck","cable machine","dumbbell rack","preacher bench","cable lat pulldown",
+  "standing calf raise","ab crunch machine","seated curl","leg extension","horizontal leg press",
+  "glute drive","hip abduction/adduction","roman chair","hyperextension bench","back extension machine",
+  "seated calf raise","chest-supported row","cable row","treadmill","deadlift platform",
+  "preacher curl machine","hack squat","inclined leg press","lat pulldown machine"
+];
+
+let editingGym=null;
+
+function setupDataBackups(){
+  el.exportWorkoutBackupButton?.addEventListener("click",exportWorkoutBackup);
+  el.importWorkoutBackupButton?.addEventListener("click",()=>el.importWorkoutBackupFile.click());
+  el.importWorkoutBackupFile?.addEventListener("change",restoreWorkoutBackupFile);
+}
+
+function exportWorkoutBackup(){
+  const storage=window.exportAppStorageEntries?.()||{};
+  const payload={
+    format:"jim-gym-backup",
+    schemaVersion:BACKUP_SCHEMA_VERSION,
+    exportedAt:new Date().toISOString(),
+    guest:Boolean(window.isAppGuest?.()),
+    storage
+  };
+
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=`jim-gym-backup-${managerDateStamp()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+  el.backupStatus.textContent=`Backup exported with ${Object.keys(storage).length} stored data records.`;
+}
+
+async function restoreWorkoutBackupFile(){
+  const file=el.importWorkoutBackupFile.files?.[0];
+  el.importWorkoutBackupFile.value="";
+  if(!file) return;
+
+  try{
+    const parsed=JSON.parse(await file.text());
+    if(!parsed || parsed.format!=="jim-gym-backup" || !parsed.storage || typeof parsed.storage!=="object"){
+      throw new Error("That file is not a Jim Gym backup.");
+    }
+
+    if(!window.confirm(
+      `Restore this backup from ${parsed.exportedAt||"an unknown date"}?\\n\\n`+
+      "The current account/session data will be replaced by the backup."
+    )) return;
+
+    el.backupStatus.textContent="Restoring backup…";
+
+    if(typeof window.restoreCurrentUserBackup==="function"){
+      await window.restoreCurrentUserBackup(parsed.storage);
+    }else{
+      window.replaceAppStorageEntriesLocal?.(parsed.storage);
+    }
+
+    el.backupStatus.textContent="Backup restored. Reloading…";
+    setTimeout(()=>location.reload(),600);
+  }catch(error){
+    console.error(error);
+    el.backupStatus.textContent=error.message||"Backup restore failed.";
+  }
+}
+
+function getPersonalGyms(){
+  try{
+    const data=JSON.parse(appStorage.getItem(PERSONAL_GYMS_STORAGE_KEY)||"[]");
+    return Array.isArray(data)?data:[];
+  }catch{
+    return [];
+  }
+}
+
+function savePersonalGyms(gyms){
+  appStorage.setItem(PERSONAL_GYMS_STORAGE_KEY,JSON.stringify(gyms));
+}
+
+function getCustomEquipment(){
+  try{
+    const data=JSON.parse(appStorage.getItem(CUSTOM_EQUIPMENT_STORAGE_KEY)||"[]");
+    return Array.isArray(data)?data:[];
+  }catch{
+    return [];
+  }
+}
+
+function saveCustomEquipment(items){
+  appStorage.setItem(CUSTOM_EQUIPMENT_STORAGE_KEY,JSON.stringify(Array.from(new Set(items))));
+}
+
+function getGlobalEquipmentList(){
+  const remote=window.globalFitnessConfig?.equipment;
+  return Array.isArray(remote)&&remote.length ? remote : DEFAULT_GYM_EQUIPMENT;
+}
+
+function getAllEquipmentOptions(){
+  return Array.from(new Set([...getGlobalEquipmentList(),...getCustomEquipment()]))
+    .filter(Boolean)
+    .sort((a,b)=>a.localeCompare(b));
+}
+
+function getGlobalGyms(){
+  return Array.isArray(window.globalFitnessConfig?.gyms) ? window.globalFitnessConfig.gyms : [];
+}
+
+function setupGymManager(){
+  el.newGymButton?.addEventListener("click",()=>openGymEditor());
+  el.closeGymEditorButton?.addEventListener("click",closeGymEditor);
+  el.addCustomEquipmentButton?.addEventListener("click",addCustomEquipmentItem);
+  el.saveGymButton?.addEventListener("click",saveGymFromEditor);
+  el.saveGlobalEquipmentButton?.addEventListener("click",saveGlobalEquipmentFromEditor);
+  el.loggingGymSelector?.addEventListener("change",renderLoggingGymEquipment);
+
+  if(window.currentUserIsAdmin){
+    el.globalEquipmentAdmin.hidden=false;
+    el.saveAsGlobalGymWrap.hidden=false;
+    el.globalEquipmentTextarea.value=getGlobalEquipmentList().join("\\n");
+  }else{
+    el.globalEquipmentAdmin.hidden=true;
+    el.saveAsGlobalGymWrap.hidden=true;
+  }
+
+  renderSavedGyms();
+  refreshLoggingGymSelector();
+}
+
+function renderSavedGyms(){
+  if(!el.savedGymList) return;
+  el.savedGymList.innerHTML="";
+
+  const entries=[
+    ...getPersonalGyms().map(gym=>({...gym,_kind:"personal"})),
+    ...getGlobalGyms().map(gym=>({...gym,_kind:"global"}))
+  ];
+
+  if(!entries.length){
+    el.savedGymList.innerHTML='<div class="managed-empty">No gyms saved yet.</div>';
+    return;
+  }
+
+  entries.forEach(gym=>{
+    const row=document.createElement("div");
+    row.className="gym-list-row";
+
+    const copy=document.createElement("div");
+    copy.innerHTML=`<strong>${escapeHtml(gym.name||"Unnamed gym")}</strong><span>${gym._kind==="global"?"Global":"Personal"} · ${(gym.equipment||[]).length} equipment items</span>`;
+
+    const actions=document.createElement("div");
+    actions.className="gym-list-actions";
+
+    if(gym._kind==="personal" || window.currentUserIsAdmin){
+      const edit=document.createElement("button");
+      edit.type="button";
+      edit.className="secondary-button";
+      edit.textContent="Edit";
+      edit.addEventListener("click",()=>openGymEditor(gym));
+      actions.appendChild(edit);
+
+      const remove=document.createElement("button");
+      remove.type="button";
+      remove.className="builder-delete-button";
+      remove.textContent="🗑";
+      remove.addEventListener("click",()=>deleteGymEntry(gym));
+      actions.appendChild(remove);
+    }
+
+    row.append(copy,actions);
+    el.savedGymList.appendChild(row);
+  });
+}
+
+function openGymEditor(gym=null){
+  editingGym=gym?deepClone(gym):null;
+  el.gymEditor.hidden=false;
+  el.gymEditorTitle.textContent=gym?`Edit ${gym.name}`:"Add Gym";
+  el.gymNameInput.value=gym?.name||"";
+  el.saveAsGlobalGym.checked=gym?gym._kind==="global":false;
+  renderGymEquipmentChecklist(new Set(gym?.equipment||[]));
+  el.gymEditorMessage.textContent="";
+  el.gymEditor.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+
+function closeGymEditor(){
+  editingGym=null;
+  el.gymEditor.hidden=true;
+}
+
+function renderGymEquipmentChecklist(selected=new Set()){
+  el.gymEquipmentChecklist.innerHTML="";
+  getAllEquipmentOptions().forEach(item=>{
+    const label=document.createElement("label");
+    label.className="gym-equipment-check";
+
+    const input=document.createElement("input");
+    input.type="checkbox";
+    input.value=item;
+    input.checked=selected.has(item);
+
+    const span=document.createElement("span");
+    span.textContent=item;
+
+    label.append(input,span);
+    el.gymEquipmentChecklist.appendChild(label);
+  });
+}
+
+function addCustomEquipmentItem(){
+  const item=el.customEquipmentInput.value.trim();
+  if(!item) return;
+
+  const custom=getCustomEquipment();
+  if(!custom.some(existing=>existing.toLowerCase()===item.toLowerCase())){
+    custom.push(item);
+    saveCustomEquipment(custom);
+  }
+
+  el.customEquipmentInput.value="";
+  const selected=new Set(
+    [...el.gymEquipmentChecklist.querySelectorAll('input[type="checkbox"]:checked')].map(input=>input.value)
+  );
+  selected.add(item);
+  renderGymEquipmentChecklist(selected);
+}
+
+async function saveGymFromEditor(){
+  const name=el.gymNameInput.value.trim();
+  if(!name){
+    el.gymEditorMessage.textContent="Enter a gym name.";
+    return;
+  }
+
+  const equipment=[...el.gymEquipmentChecklist.querySelectorAll('input[type="checkbox"]:checked')]
+    .map(input=>input.value);
+
+  const wantsGlobal=window.currentUserIsAdmin &&
+    (editingGym?._kind==="global" || el.saveAsGlobalGym.checked);
+
+  try{
+    if(wantsGlobal){
+      if(typeof window.saveGlobalGym!=="function") throw new Error("Global gym service is unavailable.");
+      const id=await window.saveGlobalGym({
+        id:editingGym?._kind==="global"?editingGym.id:null,
+        name,
+        equipment
+      });
+
+      const gyms=getGlobalGyms().filter(gym=>gym.id!==id);
+      gyms.push({id,name,equipment});
+      window.globalFitnessConfig={...(window.globalFitnessConfig||{}),gyms};
+    }else{
+      const gyms=getPersonalGyms();
+      const id=editingGym?._kind==="personal"&&editingGym.id
+        ? editingGym.id
+        : makeSplitManagerId();
+      const next={id,name,equipment,updatedAt:Date.now()};
+      const index=gyms.findIndex(gym=>gym.id===id);
+      if(index>=0) gyms[index]=next;
+      else gyms.push(next);
+      savePersonalGyms(gyms);
+    }
+
+    closeGymEditor();
+    renderSavedGyms();
+    refreshLoggingGymSelector();
+  }catch(error){
+    console.error(error);
+    el.gymEditorMessage.textContent=error.message||"Gym could not be saved.";
+  }
+}
+
+async function deleteGymEntry(gym){
+  if(!window.confirm(`Delete "${gym.name}"?`)) return;
+
+  if(gym._kind==="global"){
+    if(!window.currentUserIsAdmin || typeof window.deleteGlobalGym!=="function") return;
+    await window.deleteGlobalGym(gym.id);
+    window.globalFitnessConfig={
+      ...(window.globalFitnessConfig||{}),
+      gyms:getGlobalGyms().filter(item=>item.id!==gym.id)
+    };
+  }else{
+    savePersonalGyms(getPersonalGyms().filter(item=>item.id!==gym.id));
+  }
+
+  renderSavedGyms();
+  refreshLoggingGymSelector();
+}
+
+async function saveGlobalEquipmentFromEditor(){
+  if(!window.currentUserIsAdmin) return;
+
+  const items=el.globalEquipmentTextarea.value
+    .split(/\\r?\\n/)
+    .map(item=>item.trim())
+    .filter(Boolean);
+
+  if(!items.length){
+    el.globalEquipmentMessage.textContent="Keep at least one equipment item.";
+    return;
+  }
+
+  try{
+    await window.saveGlobalEquipmentList?.(items);
+    window.globalFitnessConfig={...(window.globalFitnessConfig||{}),equipment:items};
+    el.globalEquipmentMessage.textContent="Global equipment list saved.";
+    renderGymEquipmentChecklist(new Set());
+  }catch(error){
+    el.globalEquipmentMessage.textContent=error.message||"Global equipment list could not be saved.";
+  }
+}
+
+function refreshLoggingGymSelector(){
+  if(!el.loggingGymSelector) return;
+
+  const previous=el.loggingGymSelector.value;
+  el.loggingGymSelector.innerHTML='<option value="">Choose a gym…</option>';
+
+  [
+    ...getPersonalGyms().map(gym=>({...gym,_kind:"personal"})),
+    ...getGlobalGyms().map(gym=>({...gym,_kind:"global"}))
+  ].forEach(gym=>{
+    const option=document.createElement("option");
+    option.value=`${gym._kind}:${gym.id}`;
+    option.textContent=`${gym.name}${gym._kind==="global"?" · Global":""}`;
+    el.loggingGymSelector.appendChild(option);
+  });
+
+  if([...el.loggingGymSelector.options].some(option=>option.value===previous)){
+    el.loggingGymSelector.value=previous;
+  }
+
+  renderLoggingGymEquipment();
+}
+
+function findGymBySelectorValue(value){
+  const [kind,id]=String(value||"").split(":");
+  if(kind==="personal") return getPersonalGyms().find(gym=>gym.id===id)||null;
+  if(kind==="global") return getGlobalGyms().find(gym=>gym.id===id)||null;
+  return null;
+}
+
+function renderLoggingGymEquipment(){
+  const gym=findGymBySelectorValue(el.loggingGymSelector?.value);
+  if(!gym){
+    el.loggingGymEquipment.textContent="Select a gym to review its equipment before starting the workout.";
+    return;
+  }
+
+  el.loggingGymEquipment.innerHTML="";
+  (gym.equipment||[]).sort((a,b)=>a.localeCompare(b)).forEach(item=>{
+    const chip=document.createElement("span");
+    chip.className="gym-equipment-chip";
+    chip.textContent=item;
+    el.loggingGymEquipment.appendChild(chip);
+  });
+
+  if(!(gym.equipment||[]).length){
+    el.loggingGymEquipment.textContent="No equipment has been listed for this gym.";
+  }
 }
 
 function setupSettingsPersistence(){
@@ -5738,11 +6259,14 @@ window.initializeFitnessApp=function(){
   setupLogDetailSheet();
   setupTabs();
   setupSplitManager();
+  migrateLegacyWorkoutLogAliases();
   setupWorkoutLogging();
   setupWorkoutTracking();
   setupCyclingLogging();
   setupSettingsPersistence();
   setupExerciseLibrarySettings();
+  setupDataBackups();
+  setupGymManager();
   migrateKnownSideExerciseLogs();
   update();
 };

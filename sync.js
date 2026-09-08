@@ -139,10 +139,102 @@ export async function synchronizeUserStorage(uid){
     return {direction:"empty",count:0};
   }
 
-  // Cloud is authoritative once cloud data exists. This allows another phone
-  // to pick up the user's latest state without mixing accounts.
-  window.replaceAppStorageEntriesLocal?.(remote);
-  return {direction:"downloaded",count:Object.keys(remote).length};
+  // v26.6 uses a loss-averse merge. Historical workout/cycling arrays are
+  // unioned by log identity so an offline/local set cannot be silently
+  // discarded just because an older cloud snapshot already exists.
+  const merged=mergeStorageStates(local,remote);
+  window.replaceAppStorageEntriesLocal?.(merged);
+
+  // Upload the merged result so every device converges on the same snapshot.
+  await uploadEntries(uid,Object.entries(merged));
+  return {direction:"merged",count:Object.keys(merged).length};
+}
+
+function mergeStorageStates(local,remote){
+  const result={...remote};
+
+  Object.entries(local||{}).forEach(([key,value])=>{
+    if(!(key in remote)){
+      result[key]=value;
+      return;
+    }
+
+    if(key.startsWith("workoutSetLogs:") || key==="cyclingActivityLogs"){
+      result[key]=mergeLogArrayStrings(remote[key],value);
+      return;
+    }
+
+    // For structured user libraries, merge by id where possible.
+    if(["fitnessTrackerCustomSplits","fitnessTrackerCustomExercises","fitnessTrackerGyms"].includes(key)){
+      result[key]=mergeObjectArrayStrings(remote[key],value);
+      return;
+    }
+
+    // For settings and UI state, the cloud copy remains authoritative.
+  });
+
+  return result;
+}
+
+function mergeLogArrayStrings(first,second){
+  const a=safeJsonArray(first);
+  const b=safeJsonArray(second);
+  const seen=new Set();
+  const merged=[];
+
+  [...a,...b].forEach(item=>{
+    const identity=item?.id
+      ? `id:${item.id}`
+      : JSON.stringify([
+          item?.date||"",
+          item?.timestamp||"",
+          item?.performedExerciseId||"",
+          item?.variant||"",
+          item?.side||"",
+          item?.load??"",
+          item?.reps??"",
+          item?.durationSeconds??"",
+          item?.commuteTime??""
+        ]);
+
+    if(seen.has(identity)) return;
+    seen.add(identity);
+    merged.push(item);
+  });
+
+  merged.sort((x,y)=>(Number(x?.timestamp)||0)-(Number(y?.timestamp)||0));
+  return JSON.stringify(merged);
+}
+
+function mergeObjectArrayStrings(first,second){
+  const a=safeJsonArray(first);
+  const b=safeJsonArray(second);
+  const map=new Map();
+
+  [...a,...b].forEach((item,index)=>{
+    const id=item?.id || `index:${index}:${JSON.stringify(item)}`;
+    const existing=map.get(id);
+
+    if(!existing){
+      map.set(id,item);
+      return;
+    }
+
+    const existingUpdated=Number(existing?.updatedAt)||0;
+    const incomingUpdated=Number(item?.updatedAt)||0;
+    if(incomingUpdated>=existingUpdated) map.set(id,item);
+  });
+
+  return JSON.stringify([...map.values()]);
+}
+
+function safeJsonArray(value){
+  try{
+    const parsed=JSON.parse(value||"[]");
+    return Array.isArray(parsed)?parsed:[];
+  }catch{
+    return [];
+  }
 }
 
 export async function uploadCurrentLocalStorage(uid){
@@ -254,4 +346,43 @@ export async function loadPublishedAdminProgress(){
     displayName:chosen.data()?.displayName || "James",
     data
   };
+}
+
+
+export async function replaceUserCloudStorage(uid,entries){
+  await deleteAllDocuments(appDataCollection(uid));
+  await uploadEntries(uid,Object.entries(entries||{}));
+}
+
+export async function loadGlobalFitnessConfig(){
+  const equipmentSnapshot=await getDoc(doc(db,"globalFitnessConfig","equipment"));
+  const gymsSnapshot=await getDocs(collection(db,"globalGyms"));
+
+  return {
+    equipment:equipmentSnapshot.exists() && Array.isArray(equipmentSnapshot.data().items)
+      ? equipmentSnapshot.data().items
+      : null,
+    gyms:gymsSnapshot.docs.map(snapshot=>({id:snapshot.id,...snapshot.data()}))
+  };
+}
+
+export async function saveGlobalEquipmentList(items){
+  await setDoc(doc(db,"globalFitnessConfig","equipment"),{
+    items:Array.from(new Set((items||[]).map(item=>String(item).trim()).filter(Boolean))),
+    updatedAt:serverTimestamp()
+  });
+}
+
+export async function saveGlobalGym(gym){
+  const id=gym.id || encodeURIComponent(String(gym.name||"gym").toLowerCase().replace(/[^a-z0-9]+/g,"-"));
+  await setDoc(doc(db,"globalGyms",id),{
+    name:String(gym.name||"").trim(),
+    equipment:Array.from(new Set(gym.equipment||[])),
+    updatedAt:serverTimestamp()
+  });
+  return id;
+}
+
+export async function deleteGlobalGym(id){
+  await deleteDoc(doc(db,"globalGyms",id));
 }

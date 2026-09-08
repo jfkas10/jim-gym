@@ -27,7 +27,7 @@
       <span class="auth-mark" aria-hidden="true">J</span>
       <div class="auth-brand-meta">
         <span class="eyebrow">JIM GYM</span>
-        <span class="app-version-badge">v26.5.3</span>
+        <span class="app-version-badge">v26.6</span>
       </div>
       <h1>Fitness Progress</h1>
       <p>Your training history, separated by account.</p>
@@ -56,6 +56,12 @@
         <button id="signInButton" class="auth-primary" type="submit">Sign In</button>
         <button id="forgotPasswordButton" class="auth-link" type="button">Forgot password?</button>
       </form>
+
+      <div class="guest-access">
+        <span>or</span>
+        <button id="guestModeButton" class="secondary-button" type="button">Continue as Guest</button>
+        <p>Guest workouts are temporary and disappear when the session ends.</p>
+      </div>
 
       <form id="registerForm" class="auth-form" hidden>
         <label>
@@ -124,7 +130,8 @@
     <div class="split-manager-toolbar">
       <button id="newSplitButton" class="primary-button" type="button">+ New Split</button>
       <button id="manageSplitsButton" class="secondary-button" type="button">Manage Splits</button>
-      <button id="exportAllSplitsButton" class="secondary-button" type="button">Export Splits</button>
+      <button id="exportAllSplitsButton" class="secondary-button" type="button">Export JSON</button>
+      <button id="exportSplitsTxtButton" class="secondary-button" type="button">Export ChatGPT TXT</button>
       <button id="importSplitsButton" class="secondary-button" type="button">Import JSON</button>
       <input id="importSplitsFile" type="file" accept="application/json,.json" hidden>
     </div>
@@ -312,6 +319,17 @@
     </div>
     <div id="workoutLoggingMessage" class="validation" hidden></div>
     <div id="selectedDayDescription" class="day-description" hidden></div>
+
+    <section id="gymCompatibilityCard" class="gym-compatibility-card" hidden>
+      <div class="gym-compatibility-head">
+        <div><span class="eyebrow">GYM COMPATIBILITY</span><strong>Check today's equipment</strong></div>
+        <select id="loggingGymSelector"><option value="">Choose a gym…</option></select>
+      </div>
+      <div id="loggingGymEquipment" class="gym-equipment-summary">
+        Select a gym to review its equipment before starting the workout.
+      </div>
+      <p class="sub">This is a reference list only. Use your own judgment about whether the gym has suitable substitutes for today's routine.</p>
+    </section>
 
     <section id="inlineCyclingContainer" class="workout-section cycling-inline" hidden>
       <div class="workout-section-title">
@@ -606,6 +624,59 @@
           <input id="deadTrafficSeconds" type="number" value="90" min="0" step="1">
         </label>
       </div>
+
+      <section class="data-backup-settings">
+        <div>
+          <span class="eyebrow">DATA SAFETY</span>
+          <strong>Workout Backups</strong>
+          <p class="sub">Download a complete snapshot of this account's app data. Restore files are version-independent where possible.</p>
+        </div>
+        <div class="backup-actions">
+          <button id="exportWorkoutBackupButton" class="secondary-button" type="button">Export Backup</button>
+          <button id="importWorkoutBackupButton" class="secondary-button" type="button">Restore Backup</button>
+          <input id="importWorkoutBackupFile" type="file" accept="application/json,.json" hidden>
+        </div>
+        <p id="backupStatus" class="builder-message" aria-live="polite"></p>
+      </section>
+
+      <section class="gym-settings-card">
+        <div class="gym-settings-heading">
+          <div>
+            <span class="eyebrow">GYMS</span>
+            <strong>Gym & Equipment Library</strong>
+            <p class="sub">Save gyms you use and the equipment available at each location.</p>
+          </div>
+          <button id="newGymButton" class="secondary-button" type="button">+ Add Gym</button>
+        </div>
+
+        <div id="savedGymList" class="saved-gym-list"></div>
+
+        <section id="gymEditor" class="gym-editor" hidden>
+          <div class="gym-editor-head">
+            <h3 id="gymEditorTitle">Add Gym</h3>
+            <button id="closeGymEditorButton" class="sheet-close" type="button" aria-label="Close gym editor">×</button>
+          </div>
+          <label class="field"><span class="label">Gym name</span><input id="gymNameInput" type="text" placeholder="Gym name"></label>
+          <div class="gym-custom-equipment-row">
+            <input id="customEquipmentInput" type="text" placeholder="Add equipment not listed">
+            <button id="addCustomEquipmentButton" class="secondary-button" type="button">Add Equipment</button>
+          </div>
+          <div id="gymEquipmentChecklist" class="gym-equipment-checklist"></div>
+          <label id="saveAsGlobalGymWrap" class="custom-check" hidden>
+            <input id="saveAsGlobalGym" type="checkbox"><span>Save as a global gym for all users</span>
+          </label>
+          <button id="saveGymButton" class="primary-button" type="button">Save Gym</button>
+          <p id="gymEditorMessage" class="builder-message" aria-live="polite"></p>
+        </section>
+
+        <section id="globalEquipmentAdmin" class="global-equipment-admin" hidden>
+          <span class="eyebrow">ADMIN · GLOBAL EQUIPMENT</span>
+          <p class="sub">One equipment item per line. Saving updates the shared equipment checklist for signed-in users.</p>
+          <textarea id="globalEquipmentTextarea" rows="10"></textarea>
+          <button id="saveGlobalEquipmentButton" class="secondary-button" type="button">Save Global Equipment List</button>
+          <p id="globalEquipmentMessage" class="builder-message" aria-live="polite"></p>
+        </section>
+      </section>
 
       <section class="exercise-library-settings">
         <div class="exercise-library-heading">

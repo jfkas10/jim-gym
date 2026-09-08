@@ -1585,3 +1585,193 @@ input[type="month"]::-webkit-calendar-picker-indicator{
     white-space:nowrap;
   }
 }
+
+/* ---------- v26.6 backups, guests, gyms ---------- */
+.guest-access{
+  display:grid;
+  gap:8px;
+  margin-top:14px;
+  padding-top:14px;
+  border-top:1px solid var(--border);
+  text-align:center;
+}
+.guest-access>span{
+  color:var(--muted);
+  font-size:.75rem;
+}
+.guest-access p{
+  margin:0;
+  color:var(--muted);
+  font-size:.74rem;
+  line-height:1.4;
+}
+.data-backup-settings,
+.gym-settings-card{
+  margin-top:14px;
+  padding:17px;
+  border-radius:16px;
+  background:var(--card);
+  box-shadow:var(--shadow);
+}
+.data-backup-settings>div:first-child,
+.gym-settings-heading>div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.backup-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:12px;
+}
+.gym-settings-heading{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.saved-gym-list{
+  display:grid;
+  gap:7px;
+  margin-top:12px;
+}
+.gym-list-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:10px;
+  align-items:center;
+  padding:11px 12px;
+  border-radius:12px;
+  background:var(--field-bg);
+}
+.gym-list-row strong,
+.gym-list-row span{
+  display:block;
+}
+.gym-list-row span{
+  margin-top:3px;
+  color:var(--muted);
+  font-size:.74rem;
+}
+.gym-list-actions{
+  display:flex;
+  gap:6px;
+}
+.gym-editor,
+.global-equipment-admin{
+  margin-top:12px;
+  padding:14px;
+  border-radius:14px;
+  background:var(--field-bg);
+}
+.gym-editor-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.gym-editor-head h3{
+  margin:0;
+}
+.gym-custom-equipment-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  margin:10px 0;
+}
+.gym-equipment-checklist{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  max-height:360px;
+  overflow:auto;
+  padding:4px 0;
+}
+.gym-equipment-check{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  padding:9px 10px;
+  border-radius:10px;
+  background:var(--card);
+  font-size:.78rem;
+}
+.gym-equipment-check input{
+  flex:0 0 auto;
+  min-height:auto;
+  width:18px;
+  height:18px;
+}
+.global-equipment-admin textarea{
+  width:100%;
+  margin:10px 0;
+  padding:10px 12px;
+  border:0;
+  border-radius:11px;
+  background:var(--card);
+  color:var(--text);
+  box-shadow:inset 0 0 0 1px var(--border);
+  font:inherit;
+}
+.gym-compatibility-card{
+  margin:10px 0 16px;
+  padding:14px;
+  border-radius:17px;
+  background:var(--card);
+  box-shadow:var(--shadow);
+}
+.gym-compatibility-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+}
+.gym-compatibility-head>div{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.gym-compatibility-head select{
+  width:min(300px,48%);
+}
+.gym-equipment-summary{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:10px;
+  color:var(--muted);
+  font-size:.78rem;
+}
+.gym-equipment-chip{
+  display:inline-flex;
+  align-items:center;
+  padding:5px 8px;
+  border-radius:999px;
+  background:var(--field-bg);
+  color:var(--text);
+  font-size:.72rem;
+}
+@media(max-width:600px){
+  .gym-settings-heading,
+  .gym-compatibility-head{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .gym-compatibility-head select{
+    width:100%;
+  }
+  .gym-equipment-checklist{
+    grid-template-columns:1fr;
+  }
+  .gym-custom-equipment-row{
+    grid-template-columns:1fr;
+  }
+  .gym-list-row{
+    grid-template-columns:1fr;
+  }
+  .gym-list-actions{
+    justify-content:flex-start;
+  }
+}

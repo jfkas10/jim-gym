@@ -4,6 +4,8 @@
   const PREFIX_ROOT="fitnessUser:";
   let currentUid=null;
   let cloudAdapter=null;
+  let guestMode=false;
+  const guestMemory=new Map();
 
   const knownLegacyKey=(key)=>{
     return key==="cyclingActivityLogs" ||
@@ -20,6 +22,10 @@
   const prefix=()=>currentUid ? `${PREFIX_ROOT}${currentUid}:` : null;
 
   const localEntries=()=>{
+    if(guestMode){
+      return Object.fromEntries(guestMemory.entries());
+    }
+
     const p=prefix();
     if(!p) return {};
     const entries={};
@@ -49,11 +55,23 @@
   };
 
   window.setAppStorageUser=function(uid){
+    guestMode=false;
     currentUid=String(uid||"").trim() || null;
   };
 
+  window.setAppGuestMode=function(){
+    guestMode=true;
+    currentUid="guest";
+    cloudAdapter=null;
+    guestMemory.clear();
+  };
+
+  window.isAppGuest=function(){
+    return guestMode;
+  };
+
   window.setAppStorageCloudAdapter=function(adapter){
-    cloudAdapter=adapter || null;
+    cloudAdapter=guestMode ? null : (adapter || null);
   };
 
   window.exportAppStorageEntries=function(){
@@ -61,6 +79,14 @@
   };
 
   window.replaceAppStorageEntriesLocal=function(entries){
+    if(guestMode){
+      guestMemory.clear();
+      Object.entries(entries||{}).forEach(([key,value])=>{
+        if(value!==null && value!==undefined) guestMemory.set(key,String(value));
+      });
+      return;
+    }
+
     const p=prefix();
     if(!p) return;
 
@@ -93,16 +119,23 @@
     },
 
     getItem(key){
+      if(guestMode) return guestMemory.has(key) ? guestMemory.get(key) : null;
       const p=prefix();
       if(!p) return null;
       return localStorage.getItem(p+key);
     },
 
     setItem(key,value){
+      const stringValue=String(value);
+
+      if(guestMode){
+        guestMemory.set(key,stringValue);
+        return;
+      }
+
       const p=prefix();
       if(!p) throw new Error("No authenticated user is selected for local storage.");
 
-      const stringValue=String(value);
       localStorage.setItem(p+key,stringValue);
 
       runRemote(async()=>{
@@ -113,6 +146,11 @@
     },
 
     removeItem(key){
+      if(guestMode){
+        guestMemory.delete(key);
+        return;
+      }
+
       const p=prefix();
       if(!p) return;
 
@@ -126,6 +164,11 @@
     },
 
     clear(){
+      if(guestMode){
+        guestMemory.clear();
+        return;
+      }
+
       window.clearAppStorageLocal();
 
       runRemote(async()=>{

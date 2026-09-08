@@ -46,6 +46,18 @@ service cloud.firestore {
       }
     }
 
+    // ---------------- Shared gym/equipment library ----------------
+
+    match /globalFitnessConfig/{documentId} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /globalGyms/{gymId} {
+      allow get, list: if signedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ---------------- Shared built-in exercise overrides ----------------
 
     match /sharedExerciseOverrides/{exerciseId} {
