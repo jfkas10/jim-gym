@@ -67,6 +67,7 @@ function publicProgressDoc(uid,key){
 function isPublicTrackingKey(key){
   return key==="cyclingActivityLogs" ||
     key==="fitnessTrackerCustomExercises" ||
+    key.startsWith("workoutHistoryTombstones:") ||
     key.startsWith("workoutSetLogs:");
 }
 
@@ -139,7 +140,7 @@ export async function synchronizeUserStorage(uid){
     return {direction:"empty",count:0};
   }
 
-  // v26.6 uses a loss-averse merge. Historical workout/cycling arrays are
+  // Keep the v26.6+ loss-averse merge. Historical workout/cycling arrays are
   // unioned by log identity so an offline/local set cannot be silently
   // discarded just because an older cloud snapshot already exists.
   const merged=mergeStorageStates(local,remote);
@@ -161,6 +162,11 @@ function mergeStorageStates(local,remote){
 
     if(key.startsWith("workoutSetLogs:") || key==="cyclingActivityLogs"){
       result[key]=mergeLogArrayStrings(remote[key],value);
+      return;
+    }
+
+    if(key.startsWith("workoutHistoryTombstones:")){
+      result[key]=mergePrimitiveArrayStrings(remote[key],value);
       return;
     }
 
@@ -226,6 +232,10 @@ function mergeObjectArrayStrings(first,second){
   });
 
   return JSON.stringify([...map.values()]);
+}
+
+function mergePrimitiveArrayStrings(first,second){
+  return JSON.stringify([...new Set([...safeJsonArray(first),...safeJsonArray(second)])]);
 }
 
 function safeJsonArray(value){

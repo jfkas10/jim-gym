@@ -25,7 +25,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       // Owners can read their own profile.
-      // Admins can read profiles for the read-only Admin dashboard.
+      // Admins can read profiles for the user-management dashboard.
       allow get, list: if isOwner(userId) || isAdmin();
 
       // New accounts may only create their own profile as a normal user.
@@ -40,9 +40,10 @@ service cloud.firestore {
 
       match /appData/{documentId} {
         // Owners can read/write their own cloud state.
-        // Admins have read-only access for the Admin dashboard.
+        // Admins can manage another user's app data through the explicit
+        // full-user editor. Non-admin users remain owner-isolated.
         allow get, list: if isOwner(userId) || isAdmin();
-        allow create, update, delete: if isOwner(userId);
+        allow create, update, delete: if isOwner(userId) || isAdmin();
       }
     }
 

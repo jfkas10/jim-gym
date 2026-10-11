@@ -1339,6 +1339,9 @@ input,select{
 .admin-data-row span{display:block;margin-top:3px;color:var(--muted);font-size:.75rem;line-height:1.4}
 .admin-status{min-height:20px;margin:10px 2px 0;color:var(--muted);font-size:.78rem}
 .admin-status.error{color:var(--danger)}
+.managed-user-banner{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px max(16px,env(safe-area-inset-left));background:#fff3cd;color:#664d03;border-bottom:1px solid #ffda6a}
+.managed-user-banner .secondary-button{flex:0 0 auto;margin:0}
+#adminManageUserButton{margin:0 0 14px}
 @media(max-width:760px){
   .admin-summary-strip{grid-template-columns:1fr 1fr}
   .admin-summary-strip .secondary-button{grid-column:1/-1;width:100%}
@@ -1586,7 +1589,7 @@ input[type="month"]::-webkit-calendar-picker-indicator{
   }
 }
 
-/* ---------- v26.6 backups, guests, gyms ---------- */
+/* ---------- v26.6+ backups, guests, gyms ---------- */
 .guest-access{
   display:grid;
   gap:8px;

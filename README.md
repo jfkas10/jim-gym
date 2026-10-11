@@ -1,194 +1,90 @@
-# Jim Gym Fitness Progress — v26.6
+# Jim Gym Fitness Progress — v26.7
 
-v26.6 focuses on data consistency/safety and adds guest sessions, text split export, and gym/equipment management.
+v26.7 makes workout history canonical across Logging and Tracking, adds full admin user-management mode, and changes every progress chart to straight measured-point segments.
 
-## 1. Historical workout log consistency
+## Before deployment
 
-Older app versions sometimes stored the same exercise under different storage IDs. Workout Tracking already knew how to graph those aliases together, but Workout Logging could look only at the current ID when calculating:
+v26.6 is the production checkpoint. Before testing v26.7 with an important account, use **Settings → Data Safety → Export Backup** in v26.6 and keep the JSON file outside the app.
 
-- Personal record
-- Previous workout
-- Sets already logged for that exercise
+Publish the included `firestore.rules` before using the new admin editor. The rules allow an authenticated admin to write another user's `appData`; normal users remain restricted to their own profile and app data.
 
-That is why historical data could appear on a graph but not in the logger.
+## Architecture
 
-v26.6 fixes this with a canonical-log migration.
+- `index.html`, `styles.css`, `auth.css`: flat GitHub Pages UI.
+- `storage.js`: user-prefixed LocalStorage, memory-only guest storage, and cloud-write adapter.
+- `workout-history.js`: canonical strength-history service shared by Logging and Tracking.
+- `app-core.js`: splits, workout logging, tracking/charts, cycling, backups, gyms, migrations, and settings.
+- `firebase.js`, `sync.js`, `auth.js`: Firebase Authentication, Firestore merge/sync, account lifecycle, and admin-managed-user sessions.
+- `admin.js`: admin user browser and entry into the full user editor.
+- `service-worker.js`: offline application shell and runtime CDN cache.
+- `firestore.rules`: owner isolation plus explicit administrator access.
 
-On startup, the app:
-1. Reads all known historical aliases for each exercise.
-2. Copies/deduplicates those logs into the current canonical exercise ID.
-3. Preserves the original alias storage instead of deleting it.
-4. Infers old variation names where possible.
-5. Keeps new logs on the canonical ID going forward.
+Firestore stores user application values as string documents under:
 
-The migration is idempotent and runs safely on every startup rather than trusting a one-time cloud flag.
+    users/<uid>/appData/<encoded-storage-key>
 
-Workout Tracking also deduplicates the canonical + legacy copies, so the migration does not create double points on charts.
+The browser cache uses the same logical keys under a UID-prefixed LocalStorage namespace. On sign-in, workout and cycling arrays are loss-aversely merged by log identity; structured split, exercise, and gym arrays merge by ID. Guest mode uses memory only and never reads or writes Firestore or LocalStorage workout data.
 
-## 2. Loss-averse Firebase synchronization
+## Canonical workout history
 
-v26.6 no longer blindly treats the cloud snapshot as authoritative when both local and cloud workout history exist.
+Older versions used multiple physical `workoutSetLogs:<exercise-id>` keys for exercises whose IDs changed. v26.6 copied known aliases at startup, but Logging still read one key while Tracking merged aliases independently. A missing or newly discovered alias could therefore appear in a graph but not as Logging's previous workout or PR.
 
-For:
-- `workoutSetLogs:*`
-- cycling logs
+v26.7 routes all self-history reads through `workout-history.js`:
 
-local and cloud arrays are merged by log identity before the app opens. This helps protect workout sets that may have been cached locally while a device briefly had no connection.
+- Logging PR, previous workout, and current-date sets use the canonical history service.
+- Tracking uses the same canonical history service rather than a separate alias merge.
+- New logs are written only to the current canonical exercise key.
+- Known aliases and records whose embedded `performedExerciseId` identifies the canonical exercise are merged and deduplicated.
+- Migration copies recoverable history into the canonical key and is safe to run repeatedly.
+- **Legacy workout keys are never deleted by migration.**
+- Deletions create canonical tombstones, so a deliberately deleted set is not resurrected from a preserved legacy key.
 
-Custom splits, custom exercises, and personal gyms are also merged by ID where possible.
+This keeps one canonical API/view without risking the original historical records. Backup export includes canonical data, preserved legacy keys, and tombstones.
 
-## 3. On-demand backups
+## Admin user editor
 
-Settings > Data Safety now includes:
+Administrators can open **Admin**, select a user, and choose **Open Full User Editor**. The app reloads into a clearly marked admin-managed session for that UID. In this mode the normal Split Manager, Workout Logging, Workout Tracking, backups, exercise library, gyms, and settings operate on the selected user's isolated storage and Firestore data.
 
-- **Export Backup**
-- **Restore Backup**
+Workout Tracking log details now include **Edit Log** for strength sets, in addition to deletion. The editor supports date, reps/duration, load, side, and variation fields when applicable. The sticky banner's **Return to my data** button exits managed mode. Account deletion is disabled while managing another user.
 
-The backup is a JSON snapshot of the signed-in user's complete app storage, including workout logs, cycling history, custom splits/exercises, settings, personal gyms, and other user-scoped app state.
+The managed-user selection is held in `sessionStorage` and is honored only after Firestore confirms that the signed-in account has `role: "admin"`. Firestore rules are the final authorization boundary.
 
-Backup files include:
-- format identifier
-- schema version
-- export timestamp
-- all user-scoped app storage values
+## Progress graphs
 
-Restoring replaces the current account/session state and, for signed-in accounts, replaces the Firestore app-data snapshot as well.
+Strength and cycling Chart.js datasets use `tension: 0`, so measured points are connected by straight line segments. No spline interpolation is used.
 
-Keep periodic backup files somewhere outside the app (Files, iCloud Drive, Google Drive, etc.) if you want an additional safety net.
+## Existing v26.6 behavior retained
 
-## 4. Guest sessions
+- Email/password authentication and account-scoped storage
+- loss-averse local/cloud synchronization
+- guest sessions
+- built-in and custom split management/import/export
+- ChatGPT-friendly split TXT export
+- strength and cycling logging/tracking
+- backup export and restore
+- exercise library and shared admin overrides
+- personal/global gyms and equipment compatibility reference
+- James public read-only progress
+- offline service-worker shell
 
-The login screen now includes:
+## Data safety and compatibility
 
-    Continue as Guest
-
-Guest mode:
-- requires no Firebase account
-- supports logging and tracking during the current session
-- can create temporary splits/exercises/gyms
-- uses memory-only storage
-- never writes guest workout data to LocalStorage or Firestore
-- clears all guest data when the session ends/reloads
-
-This is meant only for trying the app.
-
-## 5. ChatGPT-friendly split export
-
-Split Manager now has:
-
-    Export ChatGPT TXT
-
-and each split in Manage Splits also has a `TXT` export button.
-
-The generated `.txt` file uses a Markdown-compatible table:
-
-    | Day | Section | Exercise | Prescription | Variations / Notes |
-
-This can be pasted directly into ChatGPT for routine analysis.
-
-JSON split import/export remains available for app-to-app backups/sharing.
-
-## 6. Gyms and equipment
-
-Settings now includes **Gym & Equipment Library**.
-
-### Personal gyms
-Any normal signed-in user or guest can:
-- add a gym
-- name it
-- check available equipment
-- add custom equipment that is not in the built-in list
-- edit/delete personal gyms
-
-Signed-in personal gyms are synced through the user's existing Firestore app data.
-
-### Global gyms
-Admins can:
-- save a gym as global
-- edit global gyms
-- delete global gyms
-
-All signed-in users can see global gyms.
-
-### Global equipment
-Admins can edit the shared equipment list from Settings.
-
-The initial built-in list is:
-
-- squat rack
-- smith machine
-- barbell bench
-- assisted pull-up/dip machine
-- shoulder press
-- chest press
-- pec deck
-- cable machine
-- dumbbell rack
-- preacher bench
-- cable lat pulldown
-- standing calf raise
-- ab crunch machine
-- seated curl
-- leg extension
-- horizontal leg press
-- glute drive
-- hip abduction/adduction
-- roman chair
-- hyperextension bench
-- back extension machine
-- seated calf raise
-- chest-supported row
-- cable row
-- treadmill
-- deadlift platform
-- preacher curl machine
-- hack squat
-- inclined leg press
-- lat pulldown machine
-
-### Workout Logging compatibility check
-After selecting a workout day, Workout Logging now displays a Gym Compatibility reference card.
-
-Choose one of your personal/global gyms to see its available equipment before starting the workout.
-
-The app deliberately does **not** automatically declare a workout compatible/incompatible. The equipment list is shown as a reference so the user can decide whether the gym has appropriate equipment or substitutes.
-
-## REQUIRED FIREBASE STEP
-
-v26.6 adds two shared Firestore areas:
-
-    globalFitnessConfig
-    globalGyms
-
-Publish the included `firestore.rules`:
-
-1. Firebase Console
-2. Firestore Database
-3. Rules
-4. Replace the existing rules with this build's `firestore.rules`
-5. Click **Publish**
-
-The rules keep:
-- private user app data owner-write
-- admin read access to user data
-- shared exercise overrides admin-write
-- James public progress signed-in-read / admin-write
-- global gym/equipment data signed-in-read / admin-write
-
-Guest mode does not use Firestore.
+The backup schema is `26.7`; restore remains tolerant of older version-independent backup values. Pre-account LocalStorage migration is unchanged. Side-specific exercise migration remains idempotent. Canonical workout migration does not rely on a one-time cloud flag and does not delete legacy data.
 
 ## Deployment
 
-This remains the flat GitHub Pages build.
+This remains a flat GitHub Pages build. Upload every file in the ZIP directly to the repository root, then publish `firestore.rules` in Firebase Console → Firestore Database → Rules.
 
-Upload every file directly to the repository root.
+The splash badge is `v26.7` and the service-worker cache is `v26.7.0`. Open the deployed URL once while online so installed Home Screen apps can receive the new service worker and cache `workout-history.js`.
 
-The splash screen shows:
+## Verification performed for this build
 
-    v26.6
-
-and the service-worker cache is:
-
-    v26.6.0
-
-Open the GitHub Pages URL once in Safari while online after deployment so installed iPhone Home Screen apps can pick up the new service worker.
+- JavaScript syntax checks for every `.js` file
+- canonical migration from alias-only history
+- canonical + legacy deduplication
+- Logging-style previous-workout and PR lookup from migrated history
+- preservation of the original legacy key
+- idempotent repeated migration
+- deletion tombstone behavior with preserved legacy data
+- straight-line chart configuration checks
+- flat ZIP root/content verification

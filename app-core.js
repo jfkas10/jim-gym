@@ -19,7 +19,7 @@ const outputIds=[
 ];
 
 const tabIds=["splitManager","workoutLogging","workoutTracking","admin","settings"];
-const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage","viewJamesProgressButton","publicProgressBanner","publicProgressName","exportSplitsTxtButton","exportWorkoutBackupButton","importWorkoutBackupButton","importWorkoutBackupFile","backupStatus","gymCompatibilityCard","loggingGymSelector","loggingGymEquipment","newGymButton","savedGymList","gymEditor","gymEditorTitle","closeGymEditorButton","gymNameInput","customEquipmentInput","addCustomEquipmentButton","gymEquipmentChecklist","saveAsGlobalGymWrap","saveAsGlobalGym","saveGymButton","gymEditorMessage","globalEquipmentAdmin","globalEquipmentTextarea","saveGlobalEquipmentButton","globalEquipmentMessage"];
+const workoutElementIds=["workoutSplitSelector","strengthWorkoutDate","workoutDaySelector","workoutLoggingMessage","selectedDayDescription","warmupContainer","warmupList","workingSetsContainer","workingExerciseList","trackingMuscleGroup","trackingExerciseSelector","trackingMonth","showProgressButton","trackingResults","logCommuteButton","cyclingLogMessage","saveSettingsButton","settingsSaveStatus","newSplitButton","manageSplitsButton","splitManagerStatus","splitListView","managedSplitList","splitEditorView","splitEditorName","splitEditorDayCount","splitDayEditor","splitDaySelector","previousSplitDayButton","nextSplitDayButton","splitDayName","warmupLibrarySelector","warmupVolumeType","warmupSetsWrap","warmupSets","warmupRepsWrap","warmupRepsLabel","warmupReps","warmupCustomWrap","warmupCustomVolume","saveWarmupButton","warmupBuilderMessage","savedWarmupList","splitWorkoutType","splitWorkoutExercise","splitWorkoutSets","splitWorkoutMinLabel","splitWorkoutMin","splitWorkoutMaxLabel","splitWorkoutMax","splitWorkoutUnitHint","saveWorkoutButton","workoutBuilderMessage","savedWorkoutList","saveSplitButton","toggleCustomWorkoutButton","customWorkoutCreator","customWorkoutName","customWorkoutGroup","customWorkoutTracksWeight","customWorkoutTimed","customWorkoutNoVolume","customWorkoutHasAlternatives","customAlternativesArea","customAlternativeName","addCustomAlternativeButton","customAlternativeList","saveCustomWorkoutButton","customWorkoutMessage","splitDayOrderList","exportAllSplitsButton","importSplitsButton","importSplitsFile","inlineCyclingContainer","trackingDashboardMonth","dashboardWorkoutDays","dashboardSetCount","dashboardRideCount","dashboardExerciseCount","logDetailBackdrop","logDetailSheet","logDetailTitle","logDetailContent","closeLogDetailButton","deleteLogDetailButton","editLogDetailButton","doneLogDetailButton","trackingRange","trackingMonthWrap","customWorkoutSide","customWorkoutAssistance","refreshExerciseLibraryButton","exerciseLibrarySearch","exerciseLibrarySettingsList","exerciseLibraryEditor","exerciseEditorType","exerciseEditorHeading","exerciseEditorName","exerciseEditorGroup","exerciseEditorTracksWeight","exerciseEditorTimed","exerciseEditorNoVolume","exerciseEditorSide","exerciseEditorAssistance","exerciseEditorVariants","exerciseEditorChoiceLabel","exerciseEditorSideVariant","saveExerciseEditorButton","resetBuiltInExerciseButton","deleteCustomExerciseButton","closeExerciseEditorButton","exerciseEditorMessage","viewJamesProgressButton","publicProgressBanner","publicProgressName","exportSplitsTxtButton","exportWorkoutBackupButton","importWorkoutBackupButton","importWorkoutBackupFile","backupStatus","gymCompatibilityCard","loggingGymSelector","loggingGymEquipment","newGymButton","savedGymList","gymEditor","gymEditorTitle","closeGymEditorButton","gymNameInput","customEquipmentInput","addCustomEquipmentButton","gymEquipmentChecklist","saveAsGlobalGymWrap","saveAsGlobalGym","saveGymButton","gymEditorMessage","globalEquipmentAdmin","globalEquipmentTextarea","saveGlobalEquipmentButton","globalEquipmentMessage"];
 const el=Object.fromEntries(
   [...inputIds,...outputIds,"validationMessage","advancedResults","showAdvancedResults",
    ...workoutElementIds,...tabIds.flatMap(name=>[name+"Tab",name+"Panel"])]
@@ -2483,54 +2483,10 @@ function canonicalExerciseIdForStorageId(exerciseId){
   return exerciseId;
 }
 
-function logIdentity(log){
-  if(log?.id) return `id:${log.id}`;
-  return [
-    log?.date||"",
-    log?.timestamp||"",
-    log?.performedExerciseId||"",
-    log?.variant||"",
-    log?.side||"",
-    log?.load??"",
-    log?.reps??"",
-    log?.durationSeconds??"",
-    log?.assistanceWeight??""
-  ].join("|");
-}
-
 function migrateLegacyWorkoutLogAliases(){
-  const markerKey="workoutLogSchemaMigration:v26.6";
-  let copied=0;
-
-  Object.entries(CENTRAL_TRACKING_ALIASES).forEach(([canonical,aliases])=>{
-    const ids=[canonical,...(aliases||[])];
-    const merged=[];
-    const seen=new Set();
-
-    ids.forEach(id=>{
-      getSetLogs(id).forEach(log=>{
-        const identity=logIdentity(log);
-        if(seen.has(identity)) return;
-        seen.add(identity);
-        merged.push({
-          ...log,
-          performedExerciseId:canonical,
-          variant:log.variant || CENTRAL_TRACKING_VARIANT_NAMES?.[id] || null,
-          _migratedFrom:log.performedExerciseId && log.performedExerciseId!==canonical
-            ? log.performedExerciseId
-            : (id!==canonical ? id : log._migratedFrom||null)
-        });
-      });
-    });
-
-    const canonicalExisting=getSetLogs(canonical);
-    if(JSON.stringify(merged)!==JSON.stringify(canonicalExisting)){
-      saveSetLogs(canonical,merged);
-      copied+=Math.max(0,merged.length-canonicalExisting.length);
-    }
-  });
-
-  appStorage.setItem(markerKey,"done");
+  const markerKey="workoutLogSchemaMigration:v26.7";
+  const {copied}=workoutHistory.migrateAll();
+  appStorage.setItem(markerKey,"done-legacy-keys-preserved");
   if(copied) console.info(`Copied ${copied} legacy workout logs into canonical exercise storage.`);
 }
 
@@ -2562,6 +2518,12 @@ const CENTRAL_TRACKING_VARIANT_NAMES={
   "cable-crunch":"Cable"
 };
 
+const workoutHistory=window.createWorkoutHistoryStore({
+  storage:appStorage,
+  aliases:CENTRAL_TRACKING_ALIASES,
+  variantNames:CENTRAL_TRACKING_VARIANT_NAMES
+});
+
 let trackingViewerMode="self";
 let publicAdminProgress={uid:null,displayName:"James",data:{}};
 
@@ -2578,13 +2540,22 @@ function parseTrackingStoredValue(key){
   return value===undefined ? null : value;
 }
 
-function getTrackingSetLogs(exerciseId){
-  try{
-    const data=JSON.parse(parseTrackingStoredValue("workoutSetLogs:"+exerciseId)||"[]");
-    return Array.isArray(data)?data:[];
-  }catch{
-    return [];
-  }
+function getWorkoutHistoryForTracking(exerciseId){
+  if(!isPublicTrackingView()) return workoutHistory.read(exerciseId);
+
+  const data=publicAdminProgress.data||{};
+  const keys=Object.keys(data);
+  const readOnlyStorage={
+    get length(){return keys.length},
+    key:index=>keys[index]??null,
+    getItem:key=>data[key]===undefined ? null : data[key],
+    setItem:()=>{throw new Error("Public workout history is read-only.")}
+  };
+  return window.createWorkoutHistoryStore({
+    storage:readOnlyStorage,
+    aliases:CENTRAL_TRACKING_ALIASES,
+    variantNames:CENTRAL_TRACKING_VARIANT_NAMES
+  }).read(exerciseId);
 }
 
 function getTrackingCyclingLogs(){
@@ -2791,26 +2762,8 @@ function getTrackingExercise(exerciseId){
 function getLogsForTrackingExercise(exercise){
   if(!exercise) return [];
   if(exercise.id==="cycling") return getTrackingCyclingLogs();
-
-  const logs=[];
-  const seen=new Set();
-
-  (exercise.storageIds||[exercise.id]).forEach(storageId=>{
-    getTrackingSetLogs(storageId).forEach(log=>{
-      const identity=logIdentity(log);
-      if(seen.has(identity)) return;
-      seen.add(identity);
-
-      const inferred=CENTRAL_TRACKING_VARIANT_NAMES[storageId]||null;
-      logs.push({
-        ...log,
-        _storageId:canonicalExerciseIdForStorageId(storageId),
-        variant:log.variant||inferred||null
-      });
-    });
-  });
-
-  return logs;
+  // Logging and Tracking intentionally share this canonical implementation.
+  return getWorkoutHistoryForTracking(exercise.id);
 }
 
 function inferMuscleGroups(exercise){
@@ -3459,10 +3412,9 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
       }
     }
 
-    const logs=getSetLogs(storageId);
     const selectedSplit=getSelectedWorkoutSplit();
 
-    logs.push({
+    workoutHistory.append(storageId,{
       id:makeLogId(),
       date,
       splitId:selectedSplit ? selectedSplit.id : null,
@@ -3484,8 +3436,6 @@ function buildExerciseLogger(exercise,{plannedExercise,substituted}){
       bodyWeight:bodyWeightValue,
       timestamp:Date.now()
     });
-
-    saveSetLogs(storageId,logs);
 
     reps.value="";
     renderCurrentDateSetEntries(storageId,list);
@@ -3575,10 +3525,9 @@ function buildSubexerciseBox(subexercise){
       return;
     }
 
-    const logs=getSetLogs(subexercise.id);
     const selectedSplit=getSelectedWorkoutSplit();
 
-    logs.push({
+    workoutHistory.append(subexercise.id,{
       id:makeLogId(),
       date,
       splitId:selectedSplit ? selectedSplit.id : null,
@@ -3589,7 +3538,6 @@ function buildSubexerciseBox(subexercise){
       side:null,
       timestamp:Date.now()
     });
-    saveSetLogs(subexercise.id,logs);
 
     // Keep the last finisher loading value for the next set; only clear reps.
     reps.value="";
@@ -3634,7 +3582,7 @@ function exercisePRMetric(exercise,entry){
 }
 
 function getExercisePR(exerciseId,exercise,filters={}){
-  const logs=getSetLogs(exerciseId).filter(entry=>logMatchesPRFilter(entry,filters));
+  const logs=workoutHistory.read(exerciseId).filter(entry=>logMatchesPRFilter(entry,filters));
   let best=null;
   let bestMetric=-Infinity;
 
@@ -3657,7 +3605,7 @@ function logMatchesPRFilter(entry,filters){
 
 function getPreviousDateLatestSet(exerciseId,currentDate,filters={}){
   const current=dateSortValue(currentDate);
-  const candidates=getSetLogs(exerciseId)
+  const candidates=workoutHistory.read(exerciseId)
     .filter(entry=>{
       if(!logMatchesPRFilter(entry,filters)) return false;
       const date=dateSortValue(entry.date);
@@ -3734,7 +3682,7 @@ function appendTrackingPR(exercise,logs){
 
 function renderCurrentDateSetEntries(exerciseId,list){
   const date=normalizeWorkoutDate(el.strengthWorkoutDate.value);
-  const logs=getSetLogs(exerciseId)
+  const logs=workoutHistory.read(exerciseId)
     .filter(entry=>entry.date===date)
     .sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
 
@@ -3766,8 +3714,7 @@ function renderCurrentDateSetEntries(exerciseId,list){
     remove.className="delete-log";
     remove.textContent="Delete";
     remove.addEventListener("click",()=>{
-      const updated=getSetLogs(exerciseId).filter(log=>log.id!==entry.id);
-      saveSetLogs(exerciseId,updated);
+      workoutHistory.remove(exerciseId,entry);
       renderCurrentDateSetEntries(exerciseId,list);
       if(el.trackingExerciseSelector.value===exerciseId) renderProgressHistory();
     });
@@ -4048,7 +3995,7 @@ function migrateKnownSideExerciseLogs(){
     .forEach(item=>migrateLegacySideLogsForExercise(item.id));
 }
 
-const BACKUP_SCHEMA_VERSION="26.6";
+const BACKUP_SCHEMA_VERSION="26.7";
 const PERSONAL_GYMS_STORAGE_KEY="fitnessTrackerGyms";
 const CUSTOM_EQUIPMENT_STORAGE_KEY="fitnessTrackerCustomEquipment";
 
@@ -4888,6 +4835,7 @@ function setupLogDetailSheet(){
   const close=closeLogDetailSheet;
   el.closeLogDetailButton?.addEventListener("click",close);
   el.doneLogDetailButton?.addEventListener("click",close);
+  el.editLogDetailButton?.addEventListener("click",editActiveWorkoutLog);
   el.logDetailBackdrop?.addEventListener("click",close);
 
   document.addEventListener("keydown",event=>{
@@ -4916,13 +4864,75 @@ function setupLogDetailSheet(){
 
     const storageId=entry._storageId || entry.performedExerciseId || activeLogDetail.exercise?.id;
     if(storageId){
-      saveSetLogs(storageId,getSetLogs(storageId).filter(log=>log.id!==entry.id));
+      workoutHistory.remove(storageId,entry);
     }
 
     closeLogDetailSheet();
     renderProgressHistory();
     updateTrackingDashboard();
   });
+}
+
+function editActiveWorkoutLog(){
+  if(!activeLogDetail || activeLogDetail.kind==="cycling" || isPublicTrackingView()) return;
+
+  const entry=activeLogDetail.entry;
+  const storageId=entry._storageId || entry.performedExerciseId || activeLogDetail.exercise?.id;
+  if(!storageId) return;
+
+  const date=window.prompt("Workout date (MM/DD/YYYY)",entry.date||"");
+  if(date===null) return;
+  const normalizedDate=normalizeWorkoutDate(date);
+  if(!normalizedDate){
+    window.alert("Enter the date as MM/DD/YYYY.");
+    return;
+  }
+
+  const timed=activeLogDetail.exercise?.id==="treadmill" ||
+    activeLogDetail.exercise?.unit==="seconds" ||
+    Number.isFinite(Number(entry.durationSeconds));
+  const reps=window.prompt(timed ? "Duration in seconds" : "Reps",String(entry.durationSeconds??entry.reps??""));
+  if(reps===null) return;
+  const repsNumber=Number(reps);
+  if(!Number.isInteger(repsNumber) || repsNumber<1){
+    window.alert(timed ? "Duration must be a whole number of seconds." : "Reps must be a whole number of at least 1.");
+    return;
+  }
+
+  const changes={date:normalizedDate,reps:repsNumber};
+  if(timed && entry.durationSeconds!==undefined) changes.durationSeconds=repsNumber;
+
+  if(entry.load!==null && entry.load!==undefined){
+    const load=window.prompt("Loading (lb)",String(entry.load));
+    if(load===null) return;
+    const loadNumber=Number(load);
+    if(!Number.isFinite(loadNumber) || loadNumber<0){
+      window.alert("Loading must be zero or greater.");
+      return;
+    }
+    changes.load=loadNumber;
+  }
+
+  if(entry.side){
+    const side=window.prompt("Side (Left or Right)",entry.side);
+    if(side===null) return;
+    if(!["left","right"].includes(side.trim().toLowerCase())){
+      window.alert("Side must be Left or Right.");
+      return;
+    }
+    changes.side=side.trim().toLowerCase()==="left" ? "Left" : "Right";
+  }
+
+  if(entry.variant){
+    const variant=window.prompt("Variation",entry.variant);
+    if(variant===null) return;
+    changes.variant=variant.trim()||null;
+  }
+
+  workoutHistory.update(storageId,entry,changes);
+  closeLogDetailSheet();
+  renderProgressHistory();
+  updateTrackingDashboard();
 }
 
 function closeLogDetailSheet(){
@@ -4997,6 +5007,9 @@ function openLogDetailSheet(entry,context={}){
 
   if(el.deleteLogDetailButton){
     el.deleteLogDetailButton.hidden=isPublicTrackingView();
+  }
+  if(el.editLogDetailButton){
+    el.editLogDetailButton.hidden=isPublicTrackingView() || context.kind==="cycling";
   }
 
   el.logDetailBackdrop.hidden=false;
@@ -5330,7 +5343,7 @@ function renderProgressHistory(){
     // Dragon Flag levels historically use their level IDs as storage keys.
     logs=[];
     exercise.levels.forEach(level=>{
-      getTrackingSetLogs(level.id).forEach(log=>{
+      getWorkoutHistoryForTracking(level.id).forEach(log=>{
         logs.push({
           ...log,
           _storageId:level.id,
@@ -5423,7 +5436,7 @@ function buildStrengthProgressChart(exercise,logs,dragonLevels){
       })),
       parsing:false,
       borderWidth:2.4,
-      tension:.34,
+      tension:0,
       fill:false,
       pointStyle:chartPointStyle(series.symbol),
       pointRadius:ctx=>ctx.raw?._repStatus==="in" ? 5.5 : 0,
@@ -5651,7 +5664,7 @@ function renderStrengthLogList(exercise,logs){
         );
         if(!confirmed) return;
 
-        saveSetLogs(storageId,getSetLogs(storageId).filter(log=>log.id!==entry.id));
+        workoutHistory.remove(storageId,entry);
         renderProgressHistory();
       }
     );
@@ -5737,7 +5750,7 @@ function buildDualAxisChart(config){
       pointRadius:5,
       pointHoverRadius:7,
       pointStyle:"circle",
-      tension:.34,
+      tension:0,
       borderWidth:2.4
     },
     {
@@ -5753,7 +5766,7 @@ function buildDualAxisChart(config){
       pointRadius:5,
       pointHoverRadius:7,
       pointStyle:"rectRot",
-      tension:.34,
+      tension:0,
       borderWidth:2.4
     }
   ];
@@ -5848,58 +5861,6 @@ function drawDateTicks(svg,dates,xScale,axisY,xMin,xMax){
   const label=svgElement("text",{x:450,y:axisY+48,"text-anchor":"middle",class:"chart-axis-label"});
   label.textContent="Date";
   svg.appendChild(label);
-}
-
-function buildSplinePath(points){
-  if(!points.length) return "";
-  if(points.length===1) return `M ${points[0].x} ${points[0].y}`;
-  if(points.length===2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
-
-  let d=`M ${points[0].x} ${points[0].y}`;
-  for(let i=0;i<points.length-1;i++){
-    const p0=points[i-1]||points[i];
-    const p1=points[i];
-    const p2=points[i+1];
-    const p3=points[i+2]||p2;
-
-    const cp1x=p1.x+(p2.x-p0.x)/6;
-    const cp1y=p1.y+(p2.y-p0.y)/6;
-    const cp2x=p2.x-(p3.x-p1.x)/6;
-    const cp2y=p2.y-(p3.y-p1.y)/6;
-
-    d+=` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
-  }
-  return d;
-}
-
-function buildSplineSegments(points){
-  if(points.length<2) return [];
-
-  if(points.length===2){
-    return [
-      `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`
-    ];
-  }
-
-  const segments=[];
-
-  for(let i=0;i<points.length-1;i++){
-    const p0=points[i-1]||points[i];
-    const p1=points[i];
-    const p2=points[i+1];
-    const p3=points[i+2]||p2;
-
-    const cp1x=p1.x+(p2.x-p0.x)/6;
-    const cp1y=p1.y+(p2.y-p0.y)/6;
-    const cp2x=p2.x-(p3.x-p1.x)/6;
-    const cp2y=p2.y-(p3.y-p1.y)/6;
-
-    segments.push(
-      `M ${p1.x} ${p1.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`
-    );
-  }
-
-  return segments;
 }
 
 function svgElement(name,attributes={}){

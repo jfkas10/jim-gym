@@ -13,6 +13,7 @@ let selectedUser=null;
 let selectedData={};
 let currentView="overview";
 let initialized=false;
+const MANAGED_USER_SESSION_KEY="jimGymAdminManagedUser";
 
 const $=id=>document.getElementById(id);
 
@@ -40,6 +41,7 @@ export function configureAdminAccess(user,profile){
 
 function setupAdminUI(){
   $("adminRefreshButton")?.addEventListener("click",loadUsers);
+  $("adminManageUserButton")?.addEventListener("click",openSelectedUserEditor);
 
   $("adminUserSearch")?.addEventListener("input",event=>{
     const term=event.target.value.trim().toLowerCase();
@@ -62,6 +64,20 @@ function setupAdminUI(){
   $("adminTab")?.addEventListener("click",()=>{
     if(!users.length) loadUsers();
   });
+}
+
+function openSelectedUserEditor(){
+  if(!selectedUser || !currentAdminUser) return;
+  if(selectedUser.uid===currentAdminUser.uid){
+    sessionStorage.removeItem(MANAGED_USER_SESSION_KEY);
+  }else{
+    sessionStorage.setItem(MANAGED_USER_SESSION_KEY,JSON.stringify({
+      uid:selectedUser.uid,
+      displayName:selectedUser.displayName||selectedUser.email||"User",
+      email:selectedUser.email||""
+    }));
+  }
+  location.reload();
 }
 
 async function loadUsers(){
@@ -88,7 +104,7 @@ async function loadUsers(){
   }catch(error){
     console.error(error);
     if(list) list.innerHTML='<div class="admin-empty">User list could not be loaded.</div>';
-    setStatus("Unable to read users. Confirm the v26.2 Firestore rules are published.",true);
+    setStatus("Unable to read users. Confirm the v26.7 Firestore rules are published.",true);
   }
 }
 
@@ -139,6 +155,10 @@ async function selectUser(user){
   $("adminSelectedName").textContent=user.displayName || "Unnamed user";
   $("adminSelectedEmail").textContent=user.email || user.uid;
   $("adminSelectedRole").textContent=user.role==="admin" ? "Administrator" : "User";
+  const manageButton=$("adminManageUserButton");
+  if(manageButton){
+    manageButton.textContent=user.uid===currentAdminUser?.uid ? "Return to My Data" : "Open Full User Editor";
+  }
 
   const content=$("adminInspectorContent");
   if(content) content.innerHTML='<div class="admin-empty">Loading cloud data…</div>';
@@ -160,7 +180,7 @@ async function selectUser(user){
   }catch(error){
     console.error(error);
     if(content) content.innerHTML='<div class="admin-empty">This user’s app data could not be loaded.</div>';
-    setStatus("Unable to read this user's data. Confirm the v26.2 Firestore rules are published.",true);
+    setStatus("Unable to read this user's data. Confirm the v26.7 Firestore rules are published.",true);
   }
 }
 

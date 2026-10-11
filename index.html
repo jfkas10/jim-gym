@@ -27,7 +27,7 @@
       <span class="auth-mark" aria-hidden="true">J</span>
       <div class="auth-brand-meta">
         <span class="eyebrow">JIM GYM</span>
-        <span class="app-version-badge">v26.6</span>
+        <span class="app-version-badge">v26.7</span>
       </div>
       <h1>Fitness Progress</h1>
       <p>Your training history, separated by account.</p>
@@ -517,8 +517,8 @@
 <section id="adminPanel" class="tab-panel" role="tabpanel" aria-labelledby="adminTab" hidden>
   <section class="panel admin-panel">
     <div class="panel-header">
-      <div class="row"><h2>Admin</h2><span class="badge">Read only</span></div>
-      <p class="sub">Review registered users and their cloud-synced fitness data. This dashboard does not modify another user's records.</p>
+      <div class="row"><h2>Admin</h2><span class="badge">User management</span></div>
+      <p class="sub">Review a user's cloud data, then open their full editor to manage splits, workout history, and progress tracking.</p>
     </div>
 
     <section class="admin-summary-strip">
@@ -558,6 +558,7 @@
             </div>
             <span id="adminSelectedRole" class="admin-role-pill">User</span>
           </header>
+          <button id="adminManageUserButton" class="primary-button" type="button">Open Full User Editor</button>
 
           <div class="admin-inspector-tabs" role="tablist" aria-label="Admin data categories">
             <button type="button" data-admin-view="overview" aria-selected="true">Overview</button>
@@ -809,6 +810,7 @@
   <div id="logDetailContent" class="log-detail-content"></div>
   <div class="sheet-actions">
     <button id="deleteLogDetailButton" class="danger-button" type="button">Delete Log</button>
+    <button id="editLogDetailButton" class="secondary-button" type="button">Edit Log</button>
     <button id="doneLogDetailButton" class="primary-button" type="button">Done</button>
   </div>
 </section>
@@ -816,6 +818,7 @@
 </main>
 
 <script src="./storage.js" defer></script>
+<script src="./workout-history.js" defer></script>
 <script src="./app-core.js" defer></script>
 <script type="module" src="./bootstrap.js"></script>
 </body>

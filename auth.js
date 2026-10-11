@@ -31,6 +31,41 @@ import {
 import { configureAdminAccess } from "./admin.js";
 
 const $=id=>document.getElementById(id);
+const MANAGED_USER_SESSION_KEY="jimGymAdminManagedUser";
+
+function requestedManagedUser(){
+  try{
+    const parsed=JSON.parse(sessionStorage.getItem(MANAGED_USER_SESSION_KEY)||"null");
+    return parsed && typeof parsed.uid==="string" ? parsed : null;
+  }catch{
+    return null;
+  }
+}
+
+function showManagedUserBanner(managedUser){
+  document.getElementById("managedUserBanner")?.remove();
+  if(!managedUser) return;
+
+  const banner=document.createElement("section");
+  banner.id="managedUserBanner";
+  banner.className="managed-user-banner";
+
+  const text=document.createElement("strong");
+  text.textContent=`Admin editing: ${managedUser.displayName||managedUser.email||managedUser.uid}`;
+
+  const button=document.createElement("button");
+  button.type="button";
+  button.className="secondary-button";
+  button.textContent="Return to my data";
+  button.addEventListener("click",()=>{
+    sessionStorage.removeItem(MANAGED_USER_SESSION_KEY);
+    location.reload();
+  });
+
+  banner.append(text,button);
+  $("appShell")?.prepend(banner);
+  if($("deleteAccountButton")) $("deleteAccountButton").hidden=true;
+}
 
 function friendlyAuthError(error){
   const code=error?.code || "";
@@ -144,18 +179,25 @@ async function showAuthenticatedApp(user){
     const profile=await getUserProfile(user.uid);
     const isAdmin=profile?.role==="admin";
     window.currentUserIsAdmin=isAdmin;
+    const requested=requestedManagedUser();
+    const managedUser=isAdmin && requested?.uid && requested.uid!==user.uid ? requested : null;
+    if(!managedUser) sessionStorage.removeItem(MANAGED_USER_SESSION_KEY);
+    window.currentManagedUser=managedUser;
 
     // The pre-account migration happens before first cloud synchronization.
-    maybeMigrateLegacyData(user);
+    if(!managedUser) maybeMigrateLegacyData(user);
 
-    window.setAppStorageCloudAdapter(createCloudStorageAdapter(user.uid,{
-      publishPublic:isAdmin,
+    const storageUid=managedUser?.uid || user.uid;
+    if(managedUser) window.setAppStorageUser(storageUid);
+
+    window.setAppStorageCloudAdapter(createCloudStorageAdapter(storageUid,{
+      publishPublic:isAdmin && !managedUser,
       displayName:user.displayName || "James"
     }));
 
-    const result=await synchronizeUserStorage(user.uid);
+    const result=await synchronizeUserStorage(storageUid);
 
-    if(isAdmin){
+    if(isAdmin && !managedUser){
       try{
         await publishAdminProgressSnapshot(user.uid,user.displayName || "James");
       }catch(error){
@@ -186,6 +228,7 @@ async function showAuthenticatedApp(user){
 
     $("authGate").hidden=true;
     $("appShell").hidden=false;
+    showManagedUserBanner(managedUser);
 
     if(typeof window.initializeFitnessApp==="function"){
       window.initializeFitnessApp();
@@ -224,6 +267,8 @@ function showGuestApp(){
 }
 
 function showSignedOut(){
+  sessionStorage.removeItem(MANAGED_USER_SESSION_KEY);
+  window.currentManagedUser=null;
   window.setAppStorageUser(null);
   $("appShell").hidden=true;
   $("authGate").hidden=false;
@@ -322,6 +367,10 @@ export async function startAuthentication(){
   });
 
   $("deleteAccountButton")?.addEventListener("click",async()=>{
+    if(window.currentManagedUser){
+      window.alert("Return to your own data before changing the administrator account.");
+      return;
+    }
     const user=auth.currentUser;
     if(!user || !user.email) return;
 
@@ -369,13 +418,13 @@ export async function startAuthentication(){
     if(!user) throw new Error("No signed-in user.");
 
     window.clearAppStorageLocal?.();
-    await createCloudStorageAdapter(user.uid).clear();
+    await createCloudStorageAdapter(window.currentManagedUser?.uid || user.uid).clear();
   };
 
   window.forceUploadCurrentUserData=async function(){
     const user=auth.currentUser;
     if(!user) throw new Error("No signed-in user.");
-    return uploadCurrentLocalStorage(user.uid);
+    return uploadCurrentLocalStorage(window.currentManagedUser?.uid || user.uid);
   };
 
   window.restoreCurrentUserBackup=async function(entries){
@@ -387,7 +436,7 @@ export async function startAuthentication(){
     const user=auth.currentUser;
     if(!user) throw new Error("No signed-in user.");
     window.replaceAppStorageEntriesLocal?.(entries||{});
-    await replaceUserCloudStorage(user.uid,entries||{});
+    await replaceUserCloudStorage(window.currentManagedUser?.uid || user.uid,entries||{});
   };
 
   onAuthStateChanged(auth,user=>{

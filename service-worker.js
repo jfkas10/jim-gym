@@ -1,4 +1,4 @@
-const VERSION="v26.6.0";
+const VERSION="v26.7.0";
 const SHELL_CACHE=`jim-gym-shell-${VERSION}`;
 const RUNTIME_CACHE=`jim-gym-runtime-${VERSION}`;
 
@@ -9,6 +9,7 @@ const APP_SHELL=[
   "./styles.css",
   "./auth.css",
   "./storage.js",
+  "./workout-history.js",
   "./app-core.js",
   "./firebase.js",
   "./sync.js",
