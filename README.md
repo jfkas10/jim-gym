@@ -1,4 +1,10 @@
-# Jim Gym Fitness Progress — v26.7
+# Jim Gym Fitness Progress — v26.7.1
+
+v26.7.1 is a small release-preparation update. Backup downloads are now prefixed with the account display name, including the selected user's name when an administrator is working in full-user-editor mode. For example:
+
+    jane-smith-jim-gym-backup-2026-10-11.json
+
+The backup JSON also includes an `owner` metadata object with the UID, display name, and email address when available. Restore compatibility is unchanged because older restore code ignores additional metadata.
 
 v26.7 makes workout history canonical across Logging and Tracking, adds full admin user-management mode, and changes every progress chart to straight measured-point segments.
 
@@ -69,13 +75,13 @@ Strength and cycling Chart.js datasets use `tension: 0`, so measured points are 
 
 ## Data safety and compatibility
 
-The backup schema is `26.7`; restore remains tolerant of older version-independent backup values. Pre-account LocalStorage migration is unchanged. Side-specific exercise migration remains idempotent. Canonical workout migration does not rely on a one-time cloud flag and does not delete legacy data.
+The backup schema is `26.7.1`; restore remains tolerant of older version-independent backup values. Pre-account LocalStorage migration is unchanged. Side-specific exercise migration remains idempotent. Canonical workout migration does not rely on a one-time cloud flag and does not delete legacy data.
 
 ## Deployment
 
 This remains a flat GitHub Pages build. Upload every file in the ZIP directly to the repository root, then publish `firestore.rules` in Firebase Console → Firestore Database → Rules.
 
-The splash badge is `v26.7` and the service-worker cache is `v26.7.0`. Open the deployed URL once while online so installed Home Screen apps can receive the new service worker and cache `workout-history.js`.
+The splash badge and service-worker cache are `v26.7.1`. Open the deployed URL once while online so installed Home Screen apps can receive the new service worker and cache `workout-history.js`.
 
 ## Verification performed for this build
 

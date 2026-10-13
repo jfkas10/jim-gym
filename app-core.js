@@ -3995,7 +3995,7 @@ function migrateKnownSideExerciseLogs(){
     .forEach(item=>migrateLegacySideLogsForExercise(item.id));
 }
 
-const BACKUP_SCHEMA_VERSION="26.7";
+const BACKUP_SCHEMA_VERSION="26.7.1";
 const PERSONAL_GYMS_STORAGE_KEY="fitnessTrackerGyms";
 const CUSTOM_EQUIPMENT_STORAGE_KEY="fitnessTrackerCustomEquipment";
 
@@ -4018,11 +4018,13 @@ function setupDataBackups(){
 
 function exportWorkoutBackup(){
   const storage=window.exportAppStorageEntries?.()||{};
+  const owner=backupOwnerIdentity();
   const payload={
     format:"jim-gym-backup",
     schemaVersion:BACKUP_SCHEMA_VERSION,
     exportedAt:new Date().toISOString(),
     guest:Boolean(window.isAppGuest?.()),
+    owner,
     storage
   };
 
@@ -4030,13 +4032,33 @@ function exportWorkoutBackup(){
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;
-  a.download=`jim-gym-backup-${managerDateStamp()}.json`;
+  a.download=`${backupFilenameSlug(owner.displayName||owner.email||"user")}-jim-gym-backup-${managerDateStamp()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 
-  el.backupStatus.textContent=`Backup exported with ${Object.keys(storage).length} stored data records.`;
+  el.backupStatus.textContent=`Backup exported for ${owner.displayName||owner.email||"this user"} with ${Object.keys(storage).length} stored data records.`;
+}
+
+function backupOwnerIdentity(){
+  const source=window.currentManagedUser||window.currentAppUser||{};
+  return {
+    uid:String(source.uid||""),
+    displayName:String(source.displayName||source.email||"User").trim()||"User",
+    email:String(source.email||"").trim()
+  };
+}
+
+function backupFilenameSlug(value){
+  const slug=String(value||"user")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase()
+    .replace(/['’]/g,"")
+    .replace(/[^a-z0-9]+/g,"-")
+    .replace(/^-+|-+$/g,"");
+  return slug||"user";
 }
 
 async function restoreWorkoutBackupFile(){

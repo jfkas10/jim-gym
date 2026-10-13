@@ -147,6 +147,11 @@ function maybeMigrateLegacyData(user){
 
 async function showAuthenticatedApp(user){
   window.setAppStorageUser(user.uid);
+  window.currentAppUser={
+    uid:user.uid,
+    displayName:user.displayName||"",
+    email:user.email||""
+  };
 
   $("authLoading").hidden=false;
   $("authCard").hidden=true;
@@ -243,6 +248,7 @@ async function showAuthenticatedApp(user){
 
 function showGuestApp(){
   window.setAppGuestMode?.();
+  window.currentAppUser={uid:"guest",displayName:"Guest",email:""};
   window.currentUserIsAdmin=false;
   window.globalFitnessConfig={equipment:null,gyms:[]};
 
@@ -269,6 +275,7 @@ function showGuestApp(){
 function showSignedOut(){
   sessionStorage.removeItem(MANAGED_USER_SESSION_KEY);
   window.currentManagedUser=null;
+  window.currentAppUser=null;
   window.setAppStorageUser(null);
   $("appShell").hidden=true;
   $("authGate").hidden=false;
