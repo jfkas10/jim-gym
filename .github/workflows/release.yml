@@ -13,7 +13,7 @@ on:
         type: boolean
   push:
     branches:
-      - release
+      - main
 
 concurrency:
   group: jim-gym-production
@@ -24,6 +24,7 @@ permissions:
 
 jobs:
   verify:
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release-confirmed]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Enforce manual safety checks
