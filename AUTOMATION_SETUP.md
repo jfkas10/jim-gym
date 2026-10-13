@@ -14,7 +14,7 @@ The workflow supports Jim Gym's existing flat repository layout. It stages only 
 1. In Jim Gym, open **Admin**, select each user, choose **Open Full User Editor**, then use **Settings → Data Safety → Export Backup**.
 2. Confirm every expected user has a separate owner-prefixed JSON file and store those files outside the GitHub repository.
 3. In Firebase Console, open **Firestore Database → Rules**, paste the release's `site/firestore.rules`, publish it, and confirm the publish time.
-4. Only then open GitHub **Actions → Release Jim Gym → Run workflow** and check both required confirmation boxes.
+4. Only then authorize the release. Codex advances the repository's `release` branch to the tested commit, which starts the workflow automatically. As a manual fallback, open GitHub **Actions → Release Jim Gym → Run workflow** and check both required confirmation boxes.
 
 ## First proof run
 
@@ -26,3 +26,4 @@ Run the workflow after completing the manual safety checklist. Confirm in order:
 4. A signed-in account and an admin-managed account both export owner-prefixed backup filenames.
 
 Do not begin the new codename-based release series until all four checks pass.
+

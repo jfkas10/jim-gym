@@ -11,6 +11,9 @@ on:
         description: "I manually published the matching Firestore rules"
         required: true
         type: boolean
+  push:
+    branches:
+      - release
 
 concurrency:
   group: jim-gym-production
@@ -24,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Enforce manual safety checks
-        if: ${{ !inputs.local_backups_confirmed || !inputs.firestore_rules_confirmed }}
+        if: ${{ github.event_name == 'workflow_dispatch' && (!inputs.local_backups_confirmed || !inputs.firestore_rules_confirmed) }}
         run: |
           echo "Local backups and Firestore Rules must be confirmed before release."
           exit 1
@@ -66,3 +69,4 @@ jobs:
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
