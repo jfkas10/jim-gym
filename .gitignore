@@ -1,0 +1,10 @@
+# Google GitHub authentication creates short-lived credential files here.
+gha-creds-*.json
+
+# Generated release packages.
+release/
+*.zip
+
+# Local dependencies and logs.
+node_modules/
+*.log

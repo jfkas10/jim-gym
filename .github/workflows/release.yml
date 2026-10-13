@@ -1,0 +1,68 @@
+name: Release Jim Gym
+
+on:
+  workflow_dispatch:
+    inputs:
+      local_backups_confirmed:
+        description: "I exported and safely stored a local backup for every user"
+        required: true
+        type: boolean
+      firestore_rules_confirmed:
+        description: "I manually published the matching Firestore rules"
+        required: true
+        type: boolean
+
+concurrency:
+  group: jim-gym-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Enforce manual safety checks
+        if: ${{ !inputs.local_backups_confirmed || !inputs.firestore_rules_confirmed }}
+        run: |
+          echo "Local backups and Firestore Rules must be confirmed before release."
+          exit 1
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify application and migrations
+        run: npm test
+      - name: Read app version
+        shell: bash
+        run: echo "VERSION=$(node -p \"require('./package.json').version\")" >> "$GITHUB_ENV"
+      - name: Stage flat release
+        run: npm run stage
+      - name: Build flat release ZIP
+        shell: bash
+        run: |
+          cd release/site
+          zip -r "../fitness-progress-tracker-v${VERSION}_flat.zip" .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jim-gym-flat-release
+          path: release/*.zip
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: release/site
+
+  deploy-pages:
+    needs: verify
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      pages: write
+      id-token: write
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

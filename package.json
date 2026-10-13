@@ -1,0 +1,9 @@
+{
+  "name": "jim-gym-fitness-progress",
+  "private": true,
+  "version": "26.7.1",
+  "scripts": {
+    "test": "node scripts/verify-release.cjs && node scripts/test-history.cjs",
+    "stage": "node scripts/stage-release.cjs"
+  }
+}
